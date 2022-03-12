@@ -6,14 +6,28 @@ enum PuzzleStatus { incomplete, complete }
 
 enum TileMovementStatus { nothingTapped, cannotBeMoved, moved }
 
+enum PuzzleMoveOrder {
+  white,
+  black,
+}
+
+enum PuzzleResult {
+  undecided,
+  whiteWin,
+  blackWin,
+  drawByStalement,
+  drawByInsufficientMaterial,
+}
+
 class PuzzleState extends Equatable {
   const PuzzleState({
     this.puzzle = const Puzzle(tiles: []),
     this.puzzleStatus = PuzzleStatus.incomplete,
+    this.puzzleResult = PuzzleResult.undecided,
     this.tileMovementStatus = TileMovementStatus.nothingTapped,
-    this.numberOfCorrectTiles = 0,
-    this.numberOfMoves = 0,
+    this.colorToMove = ChessPieceColor.white,
     this.lastTappedTile,
+    this.draggingTile,
   });
 
   /// [Puzzle] containing the current tile arrangement.
@@ -25,40 +39,40 @@ class PuzzleState extends Equatable {
   /// Status indicating if a [Tile] was moved or why a [Tile] was not moved.
   final TileMovementStatus tileMovementStatus;
 
+  final Tile? draggingTile;
+
   /// Represents the last tapped tile of the puzzle.
   ///
   /// The value is `null` if the user has not interacted with
   /// the puzzle yet.
   final Tile? lastTappedTile;
 
-  /// Number of tiles currently in their correct position.
-  final int numberOfCorrectTiles;
+  /// Current color to move
+  final ChessPieceColor colorToMove;
 
-  /// Number of tiles currently not in their correct position.
-  int get numberOfTilesLeft => puzzle.tiles.length - numberOfCorrectTiles - 1;
-
-  /// Number representing how many moves have been made on the current puzzle.
-  ///
-  /// The number of moves is not always the same as the total number of tiles
-  /// moved. If a row/column of 2+ tiles are moved from one tap, one move is
-  /// added.
-  final int numberOfMoves;
+  /// Result of the puzzle
+  final PuzzleResult puzzleResult;
 
   PuzzleState copyWith({
     Puzzle? puzzle,
     PuzzleStatus? puzzleStatus,
+    PuzzleResult? puzzleResult,
     TileMovementStatus? tileMovementStatus,
-    int? numberOfCorrectTiles,
-    int? numberOfMoves,
+    ChessPieceColor? colorToMove,
     Tile? lastTappedTile,
+    NullableCopy<Tile>? draggingTile,
   }) {
     return PuzzleState(
       puzzle: puzzle ?? this.puzzle,
       puzzleStatus: puzzleStatus ?? this.puzzleStatus,
+      puzzleResult: puzzleResult ?? this.puzzleResult,
       tileMovementStatus: tileMovementStatus ?? this.tileMovementStatus,
-      numberOfCorrectTiles: numberOfCorrectTiles ?? this.numberOfCorrectTiles,
-      numberOfMoves: numberOfMoves ?? this.numberOfMoves,
+      colorToMove: colorToMove ?? this.colorToMove,
       lastTappedTile: lastTappedTile ?? this.lastTappedTile,
+      draggingTile: NullableCopy.resolve(
+        draggingTile,
+        orElse: this.draggingTile,
+      ),
     );
   }
 
@@ -67,8 +81,27 @@ class PuzzleState extends Equatable {
         puzzle,
         puzzleStatus,
         tileMovementStatus,
-        numberOfCorrectTiles,
-        numberOfMoves,
+        colorToMove,
         lastTappedTile,
+        draggingTile,
       ];
+
+  bool isTileAttackedByAnyPiece({
+    required Tile toTile,
+    required ChessPieceColor color,
+  }) {
+    return puzzle.tiles.any(
+      (e) =>
+          e.chessPiece.color != color &&
+          e.chessPiece.type != ChessPieceType.empty &&
+          e.chessPiece.canCapture(
+            this,
+            fromTile: e,
+            toTile: toTile,
+            checkKingSafety: false,
+            checkPiece: false,
+            checkTurn: false,
+          ),
+    );
+  }
 }

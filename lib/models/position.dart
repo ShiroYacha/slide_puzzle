@@ -34,4 +34,8 @@ class Position extends Equatable implements Comparable<Position> {
       }
     }
   }
+
+  int toCoordinate(int size) {
+    return size * (y - 1) + x;
+  }
 }

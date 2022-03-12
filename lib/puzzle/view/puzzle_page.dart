@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:very_good_slide_puzzle/audio_control/audio_control.dart';
-import 'package:very_good_slide_puzzle/dashatar/dashatar.dart';
+import 'package:very_good_slide_puzzle/chess/chess.dart';
 import 'package:very_good_slide_puzzle/l10n/l10n.dart';
 import 'package:very_good_slide_puzzle/layout/layout.dart';
 import 'package:very_good_slide_puzzle/models/models.dart';
 import 'package:very_good_slide_puzzle/puzzle/puzzle.dart';
-import 'package:very_good_slide_puzzle/simple/simple.dart';
 import 'package:very_good_slide_puzzle/theme/theme.dart';
 import 'package:very_good_slide_puzzle/timer/timer.dart';
 import 'package:very_good_slide_puzzle/typography/typography.dart';
@@ -27,25 +26,9 @@ class PuzzlePage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => DashatarThemeBloc(
-            themes: const [
-              BlueDashatarTheme(),
-              GreenDashatarTheme(),
-              YellowDashatarTheme()
-            ],
-          ),
-        ),
-        BlocProvider(
-          create: (_) => DashatarPuzzleBloc(
-            secondsToBegin: 3,
-            ticker: const Ticker(),
-          ),
-        ),
-        BlocProvider(
           create: (context) => ThemeBloc(
             initialThemes: [
-              const SimpleTheme(),
-              context.read<DashatarThemeBloc>().state.theme,
+              const ChessTheme(),
             ],
           ),
         ),
@@ -73,38 +56,28 @@ class PuzzleView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.select((ThemeBloc bloc) => bloc.state.theme);
-
-    /// Shuffle only if the current theme is Simple.
-    final shufflePuzzle = theme is SimpleTheme;
-
+    const boardSize = 5;
     return Scaffold(
       body: AnimatedContainer(
         duration: PuzzleThemeAnimationDuration.backgroundColorChange,
         decoration: BoxDecoration(color: theme.backgroundColor),
-        child: BlocListener<DashatarThemeBloc, DashatarThemeState>(
-          listener: (context, state) {
-            final dashatarTheme = context.read<DashatarThemeBloc>().state.theme;
-            context.read<ThemeBloc>().add(ThemeUpdated(theme: dashatarTheme));
-          },
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (context) => TimerBloc(
-                  ticker: const Ticker(),
-                ),
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => TimerBloc(
+                ticker: const Ticker(),
               ),
-              BlocProvider(
-                create: (context) => PuzzleBloc(4)
-                  ..add(
-                    PuzzleInitialized(
-                      shufflePuzzle: shufflePuzzle,
-                    ),
-                  ),
-              ),
-            ],
-            child: const _Puzzle(
-              key: Key('puzzle_view_puzzle'),
             ),
+            BlocProvider(
+              create: (context) => PuzzleBloc(
+                boardSize,
+              )..add(
+                  const PuzzleInitialized(),
+                ),
+            ),
+          ],
+          child: const _Puzzle(
+            key: Key('puzzle_view_puzzle'),
           ),
         ),
       ),
@@ -124,8 +97,6 @@ class _Puzzle extends StatelessWidget {
       builder: (context, constraints) {
         return Stack(
           children: [
-            if (theme is SimpleTheme)
-              theme.layoutDelegate.backgroundBuilder(state),
             SingleChildScrollView(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
@@ -139,8 +110,7 @@ class _Puzzle extends StatelessWidget {
                 ),
               ),
             ),
-            if (theme is! SimpleTheme)
-              theme.layoutDelegate.backgroundBuilder(state),
+            theme.layoutDelegate.backgroundBuilder(state),
           ],
         );
       },
@@ -295,7 +265,7 @@ class PuzzleBoard extends StatelessWidget {
           puzzle.tiles
               .map(
                 (tile) => _PuzzleTile(
-                  key: Key('puzzle_tile_${tile.value.toString()}'),
+                  key: Key('puzzle_tile_${tile.value}'),
                   tile: tile,
                 ),
               )
@@ -444,16 +414,9 @@ class PuzzleMenuItem extends StatelessWidget {
                 // Reset the timer of the currently running puzzle.
                 context.read<TimerBloc>().add(const TimerReset());
 
-                // Stop the Dashatar countdown if it has been started.
-                context.read<DashatarPuzzleBloc>().add(
-                      const DashatarCountdownStopped(),
-                    );
-
                 // Initialize the puzzle board for the newly selected theme.
                 context.read<PuzzleBloc>().add(
-                      PuzzleInitialized(
-                        shufflePuzzle: theme is SimpleTheme,
-                      ),
+                      const PuzzleInitialized(),
                     );
               },
               child: AnimatedDefaultTextStyle(
@@ -488,11 +451,11 @@ final puzzleNameKey = GlobalKey(debugLabel: 'puzzle_name');
 /// Used to animate the transition of [PuzzleTitle] when changing a theme.
 final puzzleTitleKey = GlobalKey(debugLabel: 'puzzle_title');
 
-/// The global key of [NumberOfMovesAndTilesLeft].
+/// The global key of [ColorToMoveAndResult].
 ///
-/// Used to animate the transition of [NumberOfMovesAndTilesLeft]
+/// Used to animate the transition of [ColorToMoveAndResult]
 /// when changing a theme.
-final numberOfMovesAndTilesLeftKey =
+final ColorToMoveAndResultKey =
     GlobalKey(debugLabel: 'number_of_moves_and_tiles_left');
 
 /// The global key of [AudioControl].

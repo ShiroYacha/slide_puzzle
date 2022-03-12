@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
+import 'package:very_good_slide_puzzle/chess/chess_piece.dart';
 import 'package:very_good_slide_puzzle/models/models.dart';
 
 // A 3x3 puzzle board visualization:
@@ -35,7 +36,9 @@ import 'package:very_good_slide_puzzle/models/models.dart';
 /// {@endtemplate}
 class Puzzle extends Equatable {
   /// {@macro puzzle}
-  const Puzzle({required this.tiles});
+  const Puzzle({
+    required this.tiles,
+  });
 
   /// List of [Tile]s representing the puzzle's current arrangement.
   final List<Tile> tiles;
@@ -65,23 +68,13 @@ class Puzzle extends Equatable {
     );
   }
 
-  /// Gets the number of tiles that are currently in their correct position.
-  int getNumberOfCorrectTiles() {
-    final whitespaceTile = getWhitespaceTile();
-    var numberOfCorrectTiles = 0;
-    for (final tile in tiles) {
-      if (tile != whitespaceTile) {
-        if (tile.currentPosition == tile.correctPosition) {
-          numberOfCorrectTiles++;
-        }
-      }
-    }
-    return numberOfCorrectTiles;
-  }
-
   /// Determines if the puzzle is completed.
   bool isComplete() {
-    return (tiles.length - 1) - getNumberOfCorrectTiles() == 0;
+    if (tiles.every((e) => [ChessPieceType.empty, ChessPieceType.king]
+        .contains(e.chessPiece.type))) {
+      return true;
+    }
+    return false;
   }
 
   /// Determines if the tapped tile can move in the direction of the whitespace
@@ -102,60 +95,7 @@ class Puzzle extends Equatable {
 
   /// Determines if the puzzle is solvable.
   bool isSolvable() {
-    final size = getDimension();
-    final height = tiles.length ~/ size;
-    assert(
-      size * height == tiles.length,
-      'tiles must be equal to size * height',
-    );
-    final inversions = countInversions();
-
-    if (size.isOdd) {
-      return inversions.isEven;
-    }
-
-    final whitespace = tiles.singleWhere((tile) => tile.isWhitespace);
-    final whitespaceRow = whitespace.currentPosition.y;
-
-    if (((height - whitespaceRow) + 1).isOdd) {
-      return inversions.isEven;
-    } else {
-      return inversions.isOdd;
-    }
-  }
-
-  /// Gives the number of inversions in a puzzle given its tile arrangement.
-  ///
-  /// An inversion is when a tile of a lower value is in a greater position than
-  /// a tile of a higher value.
-  int countInversions() {
-    var count = 0;
-    for (var a = 0; a < tiles.length; a++) {
-      final tileA = tiles[a];
-      if (tileA.isWhitespace) {
-        continue;
-      }
-
-      for (var b = a + 1; b < tiles.length; b++) {
-        final tileB = tiles[b];
-        if (_isInversion(tileA, tileB)) {
-          count++;
-        }
-      }
-    }
-    return count;
-  }
-
-  /// Determines if the two tiles are inverted.
-  bool _isInversion(Tile a, Tile b) {
-    if (!b.isWhitespace && a.value != b.value) {
-      if (b.value < a.value) {
-        return b.currentPosition.compareTo(a.currentPosition) > 0;
-      } else {
-        return a.currentPosition.compareTo(b.currentPosition) > 0;
-      }
-    }
-    return false;
+    return true;
   }
 
   /// Shifts one or many tiles in a row/column with the whitespace and returns
@@ -213,6 +153,15 @@ class Puzzle extends Equatable {
       });
     return Puzzle(tiles: sortedTiles);
   }
+
+  // /// Sorts puzzle tiles so they are in order of their current position.
+  // Puzzle sortByChessPieceId() {
+  //   final sortedTiles = tiles.toList()
+  //     ..sort((tileA, tileB) {
+  //       return tileA.chessPiece.id.compareTo(tileB.chessPiece.id);
+  //     });
+  //   return Puzzle(tiles: sortedTiles);
+  // }
 
   @override
   List<Object> get props => [tiles];

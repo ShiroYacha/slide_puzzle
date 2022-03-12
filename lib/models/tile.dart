@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:very_good_slide_puzzle/chess/chess_piece.dart';
 import 'package:very_good_slide_puzzle/models/models.dart';
 
 /// {@template tile}
@@ -8,17 +9,12 @@ class Tile extends Equatable {
   /// {@macro tile}
   const Tile({
     required this.value,
-    required this.correctPosition,
     required this.currentPosition,
     this.isWhitespace = false,
   });
 
   /// Value representing the correct position of [Tile] in a list.
-  final int value;
-
-  /// The correct 2D [Position] of the [Tile]. All tiles must be in their
-  /// correct position to complete the puzzle.
-  final Position correctPosition;
+  final String value;
 
   /// The current 2D [Position] of the [Tile].
   final Position currentPosition;
@@ -27,11 +23,13 @@ class Tile extends Equatable {
   final bool isWhitespace;
 
   /// Create a copy of this [Tile] with updated current position.
-  Tile copyWith({required Position currentPosition}) {
+  Tile copyWith({
+    Position? currentPosition,
+    ChessPiece? chessPiece,
+  }) {
     return Tile(
-      value: value,
-      correctPosition: correctPosition,
-      currentPosition: currentPosition,
+      value: chessPiece?.toString() ?? value,
+      currentPosition: currentPosition ?? this.currentPosition,
       isWhitespace: isWhitespace,
     );
   }
@@ -39,8 +37,16 @@ class Tile extends Equatable {
   @override
   List<Object> get props => [
         value,
-        correctPosition,
         currentPosition,
         isWhitespace,
       ];
+
+  /// If the tile represents a number
+  bool get isInt => int.tryParse(value) != null;
+
+  /// The tiles int value
+  int get intValue => int.parse(value);
+
+  /// The underlying chess piece
+  ChessPiece get chessPiece => ChessPiece.fromString(value);
 }

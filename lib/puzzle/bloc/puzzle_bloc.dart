@@ -4,18 +4,26 @@ import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:very_good_slide_puzzle/chess/chess_piece.dart';
 import 'package:very_good_slide_puzzle/models/models.dart';
+
+import 'package:very_good_slide_puzzle/utils.dart';
 
 part 'puzzle_event.dart';
 part 'puzzle_state.dart';
 
 class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
-  PuzzleBloc(this._size, {this.random}) : super(const PuzzleState()) {
+  PuzzleBloc(
+    this._size, {
+    this.random,
+  }) : super(const PuzzleState()) {
     on<PuzzleInitialized>(_onPuzzleInitialized);
     on<TileTapped>(_onTileTapped);
     on<PuzzleReset>(_onPuzzleReset);
+    on<TileDragStarted>(_onTileDragStarted);
+    on<TileDragEnded>(_onTileDragEnded);
+    on<TileDropped>(_onTileDropped);
   }
-
   final int _size;
 
   final Random? random;
@@ -24,11 +32,72 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     PuzzleInitialized event,
     Emitter<PuzzleState> emit,
   ) {
-    final puzzle = _generatePuzzle(_size, shuffle: event.shufflePuzzle);
+    final puzzle = _generatePuzzle(_size);
     emit(
       PuzzleState(
         puzzle: puzzle.sort(),
-        numberOfCorrectTiles: puzzle.getNumberOfCorrectTiles(),
+      ),
+    );
+  }
+
+  void _onTileDragStarted(TileDragStarted event, Emitter<PuzzleState> emit) {
+    emit(
+      state.copyWith(
+        draggingTile: NullableCopy(event.tile),
+      ),
+    );
+  }
+
+  void _onTileDragEnded(TileDragEnded event, Emitter<PuzzleState> emit) {
+    emit(
+      state.copyWith(
+        draggingTile: const NullableCopy(null),
+      ),
+    );
+  }
+
+  void _onTileDropped(TileDropped event, Emitter<PuzzleState> emit) {
+    if (event.fromTile.chessPiece.type == ChessPieceType.pawn) {
+      if (event.fromTile.chessPiece.color == ChessPieceColor.white &&
+          event.toTile.currentPosition.y == 0) {
+        print('promote white!');
+      }
+      if (event.fromTile.chessPiece.color == ChessPieceColor.black &&
+          event.toTile.currentPosition.y == event.boardSize) {
+        print('promote black!');
+      }
+    }
+    final newState = state.copyWith(
+      colorToMove: state.colorToMove == ChessPieceColor.white
+          ? ChessPieceColor.black
+          : ChessPieceColor.white,
+      puzzle: Puzzle(
+        tiles: [
+          ...state.puzzle.tiles.where(
+            (e) => ![event.fromTile.chessPiece.id, event.toTile.chessPiece.id]
+                .contains(e.chessPiece.id),
+          ),
+          event.toTile.copyWith(
+            currentPosition: event.toTile.currentPosition,
+            chessPiece: event.fromTile.chessPiece
+                .copyWith(id: event.toTile.chessPiece.id),
+          ),
+          event.fromTile.copyWith(
+            currentPosition: event.fromTile.currentPosition,
+            chessPiece: event.fromTile.chessPiece.copyWith(
+              type: ChessPieceType.empty,
+              color: ChessPieceColor.none,
+            ),
+          ),
+        ],
+      ),
+      draggingTile: const NullableCopy(null),
+    );
+    emit(
+      newState.copyWith(
+        puzzle: newState.puzzle.sort(),
+        puzzleStatus:
+            newState.puzzle.isComplete() ? PuzzleStatus.complete : null,
       ),
     );
   }
@@ -39,28 +108,18 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
       if (state.puzzle.isTileMovable(tappedTile)) {
         final mutablePuzzle = Puzzle(tiles: [...state.puzzle.tiles]);
         final puzzle = mutablePuzzle.moveTiles(tappedTile, []);
-        if (puzzle.isComplete()) {
-          emit(
-            state.copyWith(
-              puzzle: puzzle.sort(),
-              puzzleStatus: PuzzleStatus.complete,
-              tileMovementStatus: TileMovementStatus.moved,
-              numberOfCorrectTiles: puzzle.getNumberOfCorrectTiles(),
-              numberOfMoves: state.numberOfMoves + 1,
-              lastTappedTile: tappedTile,
-            ),
-          );
-        } else {
-          emit(
-            state.copyWith(
-              puzzle: puzzle.sort(),
-              tileMovementStatus: TileMovementStatus.moved,
-              numberOfCorrectTiles: puzzle.getNumberOfCorrectTiles(),
-              numberOfMoves: state.numberOfMoves + 1,
-              lastTappedTile: tappedTile,
-            ),
-          );
-        }
+        final colorToMove = state.colorToMove == ChessPieceColor.white
+            ? ChessPieceColor.black
+            : ChessPieceColor.white;
+        emit(
+          state.copyWith(
+            puzzle: puzzle.sort(),
+            puzzleStatus: puzzle.isComplete() ? PuzzleStatus.complete : null,
+            tileMovementStatus: TileMovementStatus.moved,
+            colorToMove: colorToMove,
+            lastTappedTile: tappedTile,
+          ),
+        );
       } else {
         emit(
           state.copyWith(tileMovementStatus: TileMovementStatus.cannotBeMoved),
@@ -78,21 +137,22 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     emit(
       PuzzleState(
         puzzle: puzzle.sort(),
-        numberOfCorrectTiles: puzzle.getNumberOfCorrectTiles(),
       ),
     );
   }
 
   /// Build a randomized, solvable puzzle of the given size.
-  Puzzle _generatePuzzle(int size, {bool shuffle = true}) {
+  Puzzle _generatePuzzle(int size) {
     final correctPositions = <Position>[];
     final currentPositions = <Position>[];
-    final whitespacePosition = Position(x: size, y: size);
+    final whitespaceCoordinate = (size / 2).floor() + 1;
+    final whitespacePosition =
+        Position(x: whitespaceCoordinate, y: whitespaceCoordinate);
 
     // Create all possible board positions.
     for (var y = 1; y <= size; y++) {
       for (var x = 1; x <= size; x++) {
-        if (x == size && y == size) {
+        if (x == whitespaceCoordinate && y == whitespaceCoordinate) {
           correctPositions.add(whitespacePosition);
           currentPositions.add(whitespacePosition);
         } else {
@@ -103,32 +163,12 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
       }
     }
 
-    if (shuffle) {
-      // Randomize only the current tile posistions.
-      currentPositions.shuffle(random);
-    }
-
-    var tiles = _getTileListFromPositions(
+    final tiles = _getTileListFromPositions(
       size,
       correctPositions,
-      currentPositions,
     );
 
-    var puzzle = Puzzle(tiles: tiles);
-
-    if (shuffle) {
-      // Assign the tiles new current positions until the puzzle is solvable and
-      // zero tiles are in their correct position.
-      while (!puzzle.isSolvable() || puzzle.getNumberOfCorrectTiles() != 0) {
-        currentPositions.shuffle(random);
-        tiles = _getTileListFromPositions(
-          size,
-          correctPositions,
-          currentPositions,
-        );
-        puzzle = Puzzle(tiles: tiles);
-      }
-    }
+    final puzzle = Puzzle(tiles: tiles);
 
     return puzzle;
   }
@@ -137,23 +177,23 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
   /// current position.
   List<Tile> _getTileListFromPositions(
     int size,
-    List<Position> correctPositions,
     List<Position> currentPositions,
   ) {
-    final whitespacePosition = Position(x: size, y: size);
+    final whitespaceCoordinate = (size / 2).floor() + 1;
+    final chessPieceFactory = ChessPieceFactory();
     return [
       for (int i = 1; i <= size * size; i++)
-        if (i == size * size)
+        if (i == size * (whitespaceCoordinate - 1) + whitespaceCoordinate)
           Tile(
-            value: i,
-            correctPosition: whitespacePosition,
+            value: ChessPiece.empty(i).toString(),
             currentPosition: currentPositions[i - 1],
             isWhitespace: true,
           )
         else
           Tile(
-            value: i,
-            correctPosition: correctPositions[i - 1],
+            value: chessPieceFactory
+                .getPiece(index: i, maxIndex: size * size)
+                .toString(),
             currentPosition: currentPositions[i - 1],
           )
     ];

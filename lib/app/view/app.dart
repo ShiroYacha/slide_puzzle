@@ -13,10 +13,11 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
-import 'package:just_audio/just_audio.dart';
+import 'package:localstorage/localstorage.dart';
 import 'package:very_good_slide_puzzle/helpers/helpers.dart';
 import 'package:very_good_slide_puzzle/l10n/l10n.dart';
 import 'package:very_good_slide_puzzle/puzzle/puzzle.dart';
+import 'package:very_good_slide_puzzle/utils.dart';
 
 /// The global key of [Navigator].
 ///
@@ -52,6 +53,8 @@ class _AppState extends State<App> {
     'assets/audio/tile_move.mp3',
   ];
 
+  final LocalStorage _storage = LocalStorage('sliding_chess');
+
   late final PlatformHelper _platformHelper;
   late final Timer _timer;
 
@@ -60,6 +63,15 @@ class _AppState extends State<App> {
     super.initState();
 
     _platformHelper = widget._platformHelperFactory();
+
+    _storage.ready.then((ready) async {
+      if (ready) {
+        if (true || _storage.getItem('not_first_time') != true) {
+          await showTutorial();
+          await _storage.setItem('not_first_time', true);
+        }
+      }
+    });
 
     _timer = Timer(const Duration(milliseconds: 20), () {
       precacheImage(

@@ -32,56 +32,16 @@
 
   <title>Slide Puzzle</title>
   <link rel="manifest" href="manifest.json">
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 
-  <style type="text/css">
-    .loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 0;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      -ms-transform: translate(-50%, -50%);
-      transform: translate(-50%, -50%);
-    }
-
-    .loader {
-      border: 6px solid #000000;
-      border-radius: 50%;
-      border-left: 6px solid white;
-      width: 40px;
-      height: 40px;
-      -webkit-animation: spin 1s linear infinite;
-      animation: spin 1s linear infinite;
-    }
-
-    @-webkit-keyframes spin {
-      0% {
-        -webkit-transform: rotate(0deg);
-      }
-
-      100% {
-        -webkit-transform: rotate(360deg);
-      }
-    }
-
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-  </style>
 </head>
 
-<body>
-  <div class="loading">
-    <div class="loader"></div>
+<body style="margin: 0px">
+  <div style="background-color: black; width: 100vw; height: 100vh; display: table-cell; vertical-align: middle;">
+    <lottie-player src="https://assets8.lottiefiles.com/packages/lf20_memvksno.json" background="transparent" speed="1"
+      style="width: 30vw; height: 30vh; margin: 0 auto;" loop autoplay></lottie-player>
   </div>
+
   <!-- This script installs service_worker.js to provide PWA functionality to
        application. For more information, see:
        https://developers.google.com/web/fundamentals/primers/service-workers -->

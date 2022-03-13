@@ -55,18 +55,6 @@ class $AssetsImagesGen {
   AssetGenImage get shuffleIcon =>
       const AssetGenImage('assets/images/shuffle_icon.png');
 
-  /// File path: assets/images/simple_dash_large.png
-  AssetGenImage get simpleDashLarge =>
-      const AssetGenImage('assets/images/simple_dash_large.png');
-
-  /// File path: assets/images/simple_dash_medium.png
-  AssetGenImage get simpleDashMedium =>
-      const AssetGenImage('assets/images/simple_dash_medium.png');
-
-  /// File path: assets/images/simple_dash_small.png
-  AssetGenImage get simpleDashSmall =>
-      const AssetGenImage('assets/images/simple_dash_small.png');
-
   /// File path: assets/images/timer_icon.png
   AssetGenImage get timerIcon =>
       const AssetGenImage('assets/images/timer_icon.png');

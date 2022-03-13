@@ -212,16 +212,18 @@ class ChessPiece {
                 toTile: toTile,
                 fromTile: fromTile,
               );
+      if (checkKingSafety &&
+          !checkIfMoveGetsOutOfCheck(
+            puzzleState,
+            fromTile: fromTile,
+            toTile: toTile,
+          )) {
+        // Cannot move and make your own king checked
+        return false;
+      }
       switch (type) {
         case ChessPieceType.king:
-          return (to.x - from.x).abs() <= 1 &&
-              (to.y - from.y).abs() <= 1 &&
-              // King cannot move into check
-              (!checkKingSafety ||
-                  !puzzleState.isTileAttackedByAnyPiece(
-                    toTile: toTile,
-                    color: color,
-                  ));
+          return (to.x - from.x).abs() <= 1 && (to.y - from.y).abs() <= 1;
         case ChessPieceType.pawn:
           return canCapture(
                 puzzleState,

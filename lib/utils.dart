@@ -19,5 +19,5 @@ class NullableCopy<T> {
 
 void showMessage(String message) {
   final theme = Theme.of(navKey.currentContext!);
-  BotToast.showText(text: message);
+  BotToast.showNotification(title: (_) => Text(message));
 }

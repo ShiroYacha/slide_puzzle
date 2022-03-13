@@ -203,7 +203,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
       if (state.puzzle.isTileMovable(tappedTile)) {
         // Cannot slide tile to get out of checks
         if (state.isCurrentMoveColorKingInCheck) {
-          showMessage('Cannot slide to get out of checks!');
+          showMessage('Cannot slide to get out of a check!');
           return;
         }
         final mutablePuzzle = Puzzle(tiles: [...state.puzzle.tiles]);
@@ -211,9 +211,15 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
         final colorToMove = state.colorToMove == ChessPieceColor.white
             ? ChessPieceColor.black
             : ChessPieceColor.white;
+        final newState = state.copyWith(
+          puzzle: puzzle.sort(),
+        );
+        if (newState.isCurrentMoveColorKingInCheck) {
+          showMessage('Cannot slide into a check!');
+          return;
+        }
         emit(
-          state.copyWith(
-            puzzle: puzzle.sort(),
+          newState.copyWith(
             tileMovementStatus: TileMovementStatus.moved,
             colorToMove: colorToMove,
             lastTappedTile: tappedTile,

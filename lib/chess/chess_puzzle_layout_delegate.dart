@@ -249,7 +249,7 @@ class ChessPuzzleTitle extends StatelessWidget {
             PuzzleResult.blackWin:
                 state.mode == PuzzleMode.puzzle ? "You've lost!" : 'Black won!',
             PuzzleResult.whiteWin:
-                state.mode == PuzzleMode.puzzle ? "You've lost!" : 'White won!',
+                state.mode == PuzzleMode.puzzle ? "You've won!" : 'White won!',
             PuzzleResult.draw: "It's a draw!",
           }[state.puzzleResult] ??
           'Sliding chess',

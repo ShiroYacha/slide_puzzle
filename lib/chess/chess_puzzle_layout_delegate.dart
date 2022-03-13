@@ -362,7 +362,7 @@ class ChessPuzzleTile extends StatelessWidget {
           builder: (context, candidateItems, rejectedItems) {
             return LongPressDraggable<Tile>(
               data: tile,
-              delay: const Duration(milliseconds: 100),
+              delay: const Duration(milliseconds: 250),
               dragAnchorStrategy: childDragAnchorStrategy,
               feedback: SizedBox(
                 width: constraints.maxWidth,

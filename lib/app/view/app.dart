@@ -75,10 +75,6 @@ class _AppState extends State<App> {
 
     _timer = Timer(const Duration(milliseconds: 20), () {
       precacheImage(
-        Image.asset('assets/images/logo_flutter_color.png').image,
-        context,
-      );
-      precacheImage(
         Image.asset('assets/images/logo_flutter_white.png').image,
         context,
       );

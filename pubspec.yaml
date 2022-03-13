@@ -21,6 +21,7 @@ dependencies:
   gap: ^2.0.0
   google_fonts: ^2.1.0
   intl: ^0.17.0
+  ionicons: ^0.1.2
   just_audio: ^0.9.18
   localstorage: ^4.0.0+1
   universal_platform: ^1.0.0+1

@@ -21,9 +21,7 @@ class AppFlutterLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final assetName = isColored
-        ? 'assets/images/logo_flutter_color.png'
-        : 'assets/images/logo_flutter_white.png';
+    const assetName = 'assets/images/logo_flutter_white.png';
 
     return AnimatedSwitcher(
       duration: PuzzleThemeAnimationDuration.logoChange,
@@ -33,10 +31,10 @@ class AppFlutterLogo extends StatelessWidget {
               height: height,
             )
           : ResponsiveLayoutBuilder(
-              key: Key(assetName),
+              key: const Key(assetName),
               small: (_, __) => Image.asset(
                 assetName,
-                height: 24,
+                height: 20,
               ),
               medium: (_, __) => Image.asset(
                 assetName,

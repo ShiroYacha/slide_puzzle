@@ -293,10 +293,12 @@ const chessPieceFactories = [
   ChessPieceLevel3Factory(),
   ChessPieceLevel4Factory(),
   ChessPieceLevel5Factory(),
+  ChessPieceLevel6Factory(),
+  ChessPieceLevel7Factory(),
   // ChessPieceNormalBoardFactory(),
 ];
 
-const defaultFactory = ChessPieceLevel5Factory();
+const defaultFactory = ChessPieceLevel1Factory();
 
 class ChessPieceLevel1Factory extends ChessPieceFactory {
   const ChessPieceLevel1Factory();
@@ -479,6 +481,59 @@ class ChessPieceLevel5Factory extends ChessPieceFactory {
         color: color,
         type: ChessPieceType.king,
       );
+    } else if ([1, 4, maxIndex, maxIndex - 3].contains(index)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.rook,
+      );
+    } else if (index <= 4) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.bishop,
+      );
+    } else if (index > maxIndex - 4) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.knight,
+      );
+    } else if ((index > size && index <= size * 2) ||
+        (index > maxIndex - size * 2 && index <= maxIndex - size)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.pawn,
+      );
+    }
+    return ChessPiece.empty(index);
+  }
+
+  @override
+  String get name => 'Board 5';
+
+  @override
+  int get boardSize => 4;
+}
+
+class ChessPieceLevel6Factory extends ChessPieceFactory {
+  const ChessPieceLevel6Factory();
+
+  @override
+  ChessPiece getPiece({
+    required int index,
+    required int maxIndex,
+  }) {
+    final color =
+        index > maxIndex / 2 ? ChessPieceColor.white : ChessPieceColor.black;
+    final size = sqrt(maxIndex).floor();
+    if (index == 3 || index == maxIndex - 2) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.king,
+      );
     } else if ([1, 5, maxIndex, maxIndex - 4].contains(index)) {
       return ChessPiece(
         index,
@@ -503,7 +558,60 @@ class ChessPieceLevel5Factory extends ChessPieceFactory {
   }
 
   @override
-  String get name => 'Board 5';
+  String get name => 'Board 6';
+
+  @override
+  int get boardSize => 5;
+}
+
+class ChessPieceLevel7Factory extends ChessPieceFactory {
+  const ChessPieceLevel7Factory();
+
+  @override
+  ChessPiece getPiece({
+    required int index,
+    required int maxIndex,
+  }) {
+    final color =
+        index > maxIndex / 2 ? ChessPieceColor.white : ChessPieceColor.black;
+    final size = sqrt(maxIndex).floor();
+    if (index == 3 || index == maxIndex - 2) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.king,
+      );
+    } else if ([1, 5, maxIndex, maxIndex - 4].contains(index)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.rook,
+      );
+    } else if (index <= 4 || index > maxIndex - 4) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.bishop,
+      );
+    } else if ([8, 18].contains(index)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.knight,
+      );
+    } else if ((index > size && index <= size * 2) ||
+        (index > maxIndex - size * 2 && index <= maxIndex - size)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.pawn,
+      );
+    }
+    return ChessPiece.empty(index);
+  }
+
+  @override
+  String get name => 'Board 7';
 
   @override
   int get boardSize => 5;

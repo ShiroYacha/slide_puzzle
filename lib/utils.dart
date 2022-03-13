@@ -18,6 +18,13 @@ class NullableCopy<T> {
   bool get isNull => data == null;
 }
 
+extension WidgetMouseExtension on Widget {
+  Widget get asMouseClickRegion => MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: this,
+      );
+}
+
 void showMessage(String message) {
   BotToast.showNotification(title: (_) => Text(message));
 }

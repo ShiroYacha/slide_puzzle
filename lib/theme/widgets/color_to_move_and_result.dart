@@ -71,6 +71,7 @@ class ColorToMoveAndResult extends StatelessWidget {
                       color: PuzzleColors.blue50,
                       borderRadius: BorderRadius.circular(8),
                     ),
+                    margin: const EdgeInsets.only(top: 4),
                     padding: const EdgeInsets.all(6),
                     child: Text(
                       toBeginningOfSentenceCase(colorToMove.name)!,
@@ -98,7 +99,7 @@ class ColorToMoveAndResult extends StatelessWidget {
                         color: PuzzleColors.white,
                       ),
                     ),
-                  ),
+                  ).asMouseClickRegion,
                 ),
               ],
             ),

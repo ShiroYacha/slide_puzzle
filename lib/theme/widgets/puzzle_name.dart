@@ -6,6 +6,7 @@ import 'package:very_good_slide_puzzle/layout/layout.dart';
 import 'package:very_good_slide_puzzle/puzzle/puzzle.dart';
 import 'package:very_good_slide_puzzle/theme/theme.dart';
 import 'package:very_good_slide_puzzle/typography/typography.dart';
+import 'package:very_good_slide_puzzle/utils.dart';
 
 /// {@template puzzle_name}
 /// Displays the name of the current puzzle theme.
@@ -52,8 +53,12 @@ class PuzzleName extends StatelessWidget {
                       size: 18,
                       color: PuzzleColors.white,
                     ),
-                  ),
+                  ).asMouseClickRegion,
                 ),
+              )
+            else
+              const WidgetSpan(
+                child: SizedBox(width: 26),
               ),
             TextSpan(
               text: state.factory.name,
@@ -74,8 +79,12 @@ class PuzzleName extends StatelessWidget {
                       size: 18,
                       color: PuzzleColors.white,
                     ),
-                  ),
+                  ).asMouseClickRegion,
                 ),
+              )
+            else
+              const WidgetSpan(
+                child: SizedBox(width: 26),
               ),
           ],
         ),

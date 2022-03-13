@@ -1,12 +1,13 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:ionicons/ionicons.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:very_good_slide_puzzle/audio_control/audio_control.dart';
 import 'package:very_good_slide_puzzle/chess/chess.dart';
 import 'package:very_good_slide_puzzle/chess/chess_piece.dart';
+import 'package:very_good_slide_puzzle/colors/colors.dart';
 import 'package:very_good_slide_puzzle/helpers/helpers.dart';
 import 'package:very_good_slide_puzzle/l10n/l10n.dart';
 import 'package:very_good_slide_puzzle/layout/layout.dart';
@@ -15,6 +16,7 @@ import 'package:very_good_slide_puzzle/puzzle/puzzle.dart';
 import 'package:very_good_slide_puzzle/theme/theme.dart';
 import 'package:very_good_slide_puzzle/timer/timer.dart';
 import 'package:very_good_slide_puzzle/typography/typography.dart';
+import 'package:very_good_slide_puzzle/utils.dart';
 
 /// {@template puzzle_page}
 /// The root page of the puzzle UI.
@@ -121,6 +123,25 @@ class _Puzzle extends StatelessWidget {
   }
 }
 
+class _Github extends StatelessWidget {
+  const _Github({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      child: const Icon(
+        Ionicons.logo_github,
+        color: PuzzleColors.white,
+      ),
+      onTap: () async {
+        if (await canLaunch('https://github.com/ShiroYacha/slide_puzzle')) {
+          await launch('https://github.com/ShiroYacha/slide_puzzle');
+        }
+      },
+    ).asMouseClickRegion;
+  }
+}
+
 /// {@template puzzle_header}
 /// Displays the header of the puzzle.
 /// {@endtemplate}
@@ -131,11 +152,18 @@ class PuzzleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 96,
-      child: ResponsiveLayoutBuilder(
-        small: (context, child) => Stack(
+    return ResponsiveLayoutBuilder(
+      small: (context, child) => SizedBox(
+        height: 50,
+        child: Stack(
           children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: EdgeInsets.only(left: 34),
+                child: _Github(),
+              ),
+            ),
             const Align(
               child: PuzzleLogo(),
             ),
@@ -148,25 +176,33 @@ class PuzzleHeader extends StatelessWidget {
             ),
           ],
         ),
-        medium: (context, child) => Padding(
+      ),
+      medium: (context, child) => SizedBox(
+        height: 96,
+        child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: 50,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
+              _Github(),
               PuzzleLogo(),
               PuzzleMenu(),
             ],
           ),
         ),
-        large: (context, child) => Padding(
+      ),
+      large: (context, child) => SizedBox(
+        height: 96,
+        child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: 50,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
+              _Github(),
               PuzzleLogo(),
               PuzzleMenu(),
             ],
@@ -270,7 +306,7 @@ class _PuzzleBoardState extends State<PuzzleBoard> {
 
     return BlocListener<PuzzleBloc, PuzzleState>(
       listener: (context, state) {
-        // _checkLegalMove(context.read<PuzzleBloc>(), state, state.colorToMove);
+        _checkLegalMove(context.read<PuzzleBloc>(), state, state.colorToMove);
         if (theme.hasTimer && state.puzzleResult != PuzzleResult.undecided) {
           context.read<TimerBloc>().add(const TimerStopped());
         }

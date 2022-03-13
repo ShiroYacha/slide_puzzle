@@ -43,10 +43,6 @@ class $AssetsImagesGen {
   AssetGenImage get facebookIcon =>
       const AssetGenImage('assets/images/facebook_icon.png');
 
-  /// File path: assets/images/logo_flutter_color.png
-  AssetGenImage get logoFlutterColor =>
-      const AssetGenImage('assets/images/logo_flutter_color.png');
-
   /// File path: assets/images/logo_flutter_white.png
   AssetGenImage get logoFlutterWhite =>
       const AssetGenImage('assets/images/logo_flutter_white.png');
@@ -67,18 +63,6 @@ class $AssetsImagesGen {
 class $AssetsImagesAudioControlGen {
   const $AssetsImagesAudioControlGen();
 
-  /// File path: assets/images/audio_control/blue_dashatar_off.png
-  AssetGenImage get blueDashatarOff =>
-      const AssetGenImage('assets/images/audio_control/blue_dashatar_off.png');
-
-  /// File path: assets/images/audio_control/dashatar_on.png
-  AssetGenImage get dashatarOn =>
-      const AssetGenImage('assets/images/audio_control/dashatar_on.png');
-
-  /// File path: assets/images/audio_control/green_dashatar_off.png
-  AssetGenImage get greenDashatarOff =>
-      const AssetGenImage('assets/images/audio_control/green_dashatar_off.png');
-
   /// File path: assets/images/audio_control/simple_off.png
   AssetGenImage get simpleOff =>
       const AssetGenImage('assets/images/audio_control/simple_off.png');
@@ -86,10 +70,6 @@ class $AssetsImagesAudioControlGen {
   /// File path: assets/images/audio_control/simple_on.png
   AssetGenImage get simpleOn =>
       const AssetGenImage('assets/images/audio_control/simple_on.png');
-
-  /// File path: assets/images/audio_control/yellow_dashatar_off.png
-  AssetGenImage get yellowDashatarOff => const AssetGenImage(
-      'assets/images/audio_control/yellow_dashatar_off.png');
 }
 
 class $AssetsImagesChessGen {

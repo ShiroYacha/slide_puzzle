@@ -129,6 +129,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     emit(
       PuzzleState(
         mode: event.mode,
+        factory: state.factory,
         puzzle: puzzle.sort(),
       ),
     );

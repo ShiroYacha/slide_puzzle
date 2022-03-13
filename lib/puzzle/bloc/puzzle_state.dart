@@ -4,7 +4,7 @@ part of 'puzzle_bloc.dart';
 
 enum PuzzleStatus { incomplete, complete }
 
-enum TileMovementStatus { nothingTapped, cannotBeMoved, moved }
+enum TileMovementStatus { nothingTapped, cannotBeMoved, moved, dropped }
 
 enum PuzzleMoveOrder {
   white,
@@ -15,14 +15,12 @@ enum PuzzleResult {
   undecided,
   whiteWin,
   blackWin,
-  drawByStalement,
-  drawByInsufficientMaterial,
+  draw,
 }
 
 class PuzzleState extends Equatable {
   const PuzzleState({
     this.puzzle = const Puzzle(tiles: []),
-    this.puzzleStatus = PuzzleStatus.incomplete,
     this.puzzleResult = PuzzleResult.undecided,
     this.tileMovementStatus = TileMovementStatus.nothingTapped,
     this.colorToMove = ChessPieceColor.white,
@@ -32,9 +30,6 @@ class PuzzleState extends Equatable {
 
   /// [Puzzle] containing the current tile arrangement.
   final Puzzle puzzle;
-
-  /// Status indicating the current state of the puzzle.
-  final PuzzleStatus puzzleStatus;
 
   /// Status indicating if a [Tile] was moved or why a [Tile] was not moved.
   final TileMovementStatus tileMovementStatus;
@@ -55,7 +50,6 @@ class PuzzleState extends Equatable {
 
   PuzzleState copyWith({
     Puzzle? puzzle,
-    PuzzleStatus? puzzleStatus,
     PuzzleResult? puzzleResult,
     TileMovementStatus? tileMovementStatus,
     ChessPieceColor? colorToMove,
@@ -64,7 +58,6 @@ class PuzzleState extends Equatable {
   }) {
     return PuzzleState(
       puzzle: puzzle ?? this.puzzle,
-      puzzleStatus: puzzleStatus ?? this.puzzleStatus,
       puzzleResult: puzzleResult ?? this.puzzleResult,
       tileMovementStatus: tileMovementStatus ?? this.tileMovementStatus,
       colorToMove: colorToMove ?? this.colorToMove,
@@ -79,12 +72,28 @@ class PuzzleState extends Equatable {
   @override
   List<Object?> get props => [
         puzzle,
-        puzzleStatus,
+        puzzleResult,
         tileMovementStatus,
         colorToMove,
         lastTappedTile,
         draggingTile,
       ];
+
+  ChessPieceColor get colorJustMoved => colorToMove == ChessPieceColor.white
+      ? ChessPieceColor.black
+      : ChessPieceColor.white;
+
+  bool get isCurrentMoveColorKingInCheck {
+    final currentKingTile = puzzle.tiles.singleWhere(
+      (e) =>
+          e.chessPiece.type == ChessPieceType.king &&
+          e.chessPiece.color == colorToMove,
+    );
+    return isTileAttackedByAnyPiece(
+      toTile: currentKingTile,
+      color: colorToMove,
+    );
+  }
 
   bool isTileAttackedByAnyPiece({
     required Tile toTile,

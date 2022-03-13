@@ -76,6 +76,16 @@ class ChessPiece {
       }[color] ??
       '?';
 
+  int get pieceValue =>
+      {
+        ChessPieceType.pawn: 1,
+        ChessPieceType.knight: 3,
+        ChessPieceType.bishop: 3,
+        ChessPieceType.rook: 5,
+        ChessPieceType.queen: 9,
+      }[type] ??
+      0;
+
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'id': id,
@@ -115,7 +125,7 @@ class ChessPiece {
     }
     if (type == ChessPieceType.pawn) {
       return (to.x - from.x).abs() == 1 &&
-          (to.y - from.y) == (color == ChessPieceColor.white ? 1 : -1) &&
+          (to.y - from.y) == (color == ChessPieceColor.white ? -1 : 1) &&
           (!checkPiece ||
               (toTile.chessPiece.type != ChessPieceType.empty &&
                   toTile.chessPiece.color != color));
@@ -133,6 +143,36 @@ class ChessPiece {
   ChessPieceColor get oppositeColor => color == ChessPieceColor.white
       ? ChessPieceColor.black
       : ChessPieceColor.white;
+
+  bool checkIfMoveGetsOutOfCheck(
+    PuzzleState puzzleState, {
+    required Tile fromTile,
+    required Tile toTile,
+  }) {
+    final newState = puzzleState.copyWith(
+      puzzle: Puzzle(
+        tiles: [
+          ...puzzleState.puzzle.tiles.where(
+            (e) => ![fromTile.chessPiece.id, toTile.chessPiece.id]
+                .contains(e.chessPiece.id),
+          ),
+          toTile.copyWith(
+            currentPosition: toTile.currentPosition,
+            chessPiece: //promotedPiece ??
+                fromTile.chessPiece.copyWith(id: toTile.chessPiece.id),
+          ),
+          fromTile.copyWith(
+            currentPosition: fromTile.currentPosition,
+            chessPiece: fromTile.chessPiece.copyWith(
+              type: ChessPieceType.empty,
+              color: ChessPieceColor.none,
+            ),
+          ),
+        ],
+      ),
+    );
+    return !newState.isCurrentMoveColorKingInCheck;
+  }
 
   bool canMove(
     PuzzleState puzzleState, {
@@ -153,50 +193,59 @@ class ChessPiece {
       // Cannot move/capture same color piece or not move
       return false;
     }
-    final attackVector = color == ChessPieceColor.white ? -1 : 1;
-    final attackingInStraightLine =
-        ((to.x - from.x).abs() == 0 || (to.y - from.y).abs() == 0) &&
-            !puzzleState.hasAnyTileBetweenStraightOrDiagonaleLine(
-              toTile: toTile,
-              fromTile: fromTile,
-            );
-    final attackingInDiagonaleLine =
-        (to.x - from.x).abs() == (to.y - from.y).abs() &&
-            !puzzleState.hasAnyTileBetweenStraightOrDiagonaleLine(
-              toTile: toTile,
-              fromTile: fromTile,
-            );
-    switch (type) {
-      case ChessPieceType.king:
-        return (to.x - from.x).abs() <= 1 &&
-            (to.y - from.y).abs() <= 1 &&
-            // King cannot move into check
-            (!checkKingSafety ||
-                !puzzleState.isTileAttackedByAnyPiece(
-                  toTile: toTile,
-                  color: color,
-                ));
-      case ChessPieceType.pawn:
-        return canCapture(
+    if (!checkPiece ||
+        (!puzzleState.isCurrentMoveColorKingInCheck ||
+            checkIfMoveGetsOutOfCheck(
               puzzleState,
               fromTile: fromTile,
               toTile: toTile,
-            ) ||
-            (to.y - from.y) == attackVector &&
-                from.x == to.x &&
-                toTile.chessPiece.type == ChessPieceType.empty;
-      case ChessPieceType.knight:
-        return ((to.x - from.x).abs() == 2 && (to.y - from.y).abs() == 1) ||
-            ((to.x - from.x).abs() == 1 && (to.y - from.y).abs() == 2);
-      case ChessPieceType.bishop:
-        return attackingInDiagonaleLine;
-      case ChessPieceType.rook:
-        return attackingInStraightLine;
-      case ChessPieceType.queen:
-        return attackingInDiagonaleLine || attackingInStraightLine;
-      case ChessPieceType.empty:
-        return false;
+            ))) {
+      final attackVector = color == ChessPieceColor.white ? -1 : 1;
+      final attackingInStraightLine =
+          ((to.x - from.x).abs() == 0 || (to.y - from.y).abs() == 0) &&
+              !puzzleState.hasAnyTileBetweenStraightOrDiagonaleLine(
+                toTile: toTile,
+                fromTile: fromTile,
+              );
+      final attackingInDiagonaleLine =
+          (to.x - from.x).abs() == (to.y - from.y).abs() &&
+              !puzzleState.hasAnyTileBetweenStraightOrDiagonaleLine(
+                toTile: toTile,
+                fromTile: fromTile,
+              );
+      switch (type) {
+        case ChessPieceType.king:
+          return (to.x - from.x).abs() <= 1 &&
+              (to.y - from.y).abs() <= 1 &&
+              // King cannot move into check
+              (!checkKingSafety ||
+                  !puzzleState.isTileAttackedByAnyPiece(
+                    toTile: toTile,
+                    color: color,
+                  ));
+        case ChessPieceType.pawn:
+          return canCapture(
+                puzzleState,
+                fromTile: fromTile,
+                toTile: toTile,
+              ) ||
+              (to.y - from.y) == attackVector &&
+                  from.x == to.x &&
+                  toTile.chessPiece.type == ChessPieceType.empty;
+        case ChessPieceType.knight:
+          return ((to.x - from.x).abs() == 2 && (to.y - from.y).abs() == 1) ||
+              ((to.x - from.x).abs() == 1 && (to.y - from.y).abs() == 2);
+        case ChessPieceType.bishop:
+          return attackingInDiagonaleLine;
+        case ChessPieceType.rook:
+          return attackingInStraightLine;
+        case ChessPieceType.queen:
+          return attackingInDiagonaleLine || attackingInStraightLine;
+        case ChessPieceType.empty:
+          return false;
+      }
     }
+    return false;
   }
 }
 
@@ -223,26 +272,27 @@ class ChessPieceFactory {
   }) {
     final color =
         index > maxIndex / 2 ? ChessPieceColor.white : ChessPieceColor.black;
+    final size = sqrt(maxIndex).floor();
     if (index == 1 || index == maxIndex) {
       return ChessPiece(
         index,
         color: color,
         type: ChessPieceType.king,
       );
-    } else if (index <= 10 || index >= maxIndex - 10) {
+    } else if (index <= 2 || index > maxIndex - 2) {
       return ChessPiece(
         index,
         color: color,
-        type: ChessPieceType.bishop,
+        type: ChessPieceType.queen,
+      );
+    } else if ((index > size && index <= size * 2) ||
+        (index > maxIndex - size * 2 && index <= maxIndex - size)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.pawn,
       );
     }
-    // if (index == 2 || index == maxIndex - 1) {
-    //   return ChessPiece(
-    //     index,
-    //     color: color,
-    //     type: ChessPieceType.rook,
-    //   );
-    // }
     return ChessPiece.empty(index);
   }
 }

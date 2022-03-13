@@ -57,39 +57,7 @@ class ChessPuzzleLayoutDelegate extends PuzzleLayoutDelegate {
 
   @override
   Widget backgroundBuilder(PuzzleState state) {
-    return Positioned(
-      right: 0,
-      bottom: 0,
-      child: ResponsiveLayoutBuilder(
-        small: (_, __) => SizedBox(
-          width: 184,
-          height: 118,
-          child: Image.asset(
-            'assets/images/simple_dash_small.png',
-            key: const Key('chess_puzzle_dash_small'),
-          ),
-        ),
-        medium: (_, __) => SizedBox(
-          width: 380.44,
-          height: 214,
-          child: Image.asset(
-            'assets/images/simple_dash_medium.png',
-            key: const Key('chess_puzzle_dash_medium'),
-          ),
-        ),
-        large: (_, __) => Padding(
-          padding: const EdgeInsets.only(bottom: 53),
-          child: SizedBox(
-            width: 568.99,
-            height: 320,
-            child: Image.asset(
-              'assets/images/simple_dash_large.png',
-              key: const Key('chess_puzzle_dash_large'),
-            ),
-          ),
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   @override
@@ -197,7 +165,7 @@ class ChessStartSection extends StatelessWidget {
         ),
         const ResponsiveGap(large: 16),
         ChessPuzzleTitle(
-          status: state.puzzleStatus,
+          result: state.puzzleResult,
         ),
         const ResponsiveGap(
           small: 12,
@@ -205,7 +173,6 @@ class ChessStartSection extends StatelessWidget {
           large: 32,
         ),
         ColorToMoveAndResult(
-          key: ColorToMoveAndResultKey,
           colorToMove: state.colorToMove,
         ),
         const ResponsiveGap(
@@ -223,7 +190,7 @@ class ChessStartSection extends StatelessWidget {
 }
 
 /// {@template chess_puzzle_title}
-/// Displays the title of the puzzle based on [status].
+/// Displays the title of the puzzle based on [result].
 ///
 /// Shows the success state when the puzzle is completed,
 /// otherwise defaults to the Puzzle Challenge title.
@@ -233,19 +200,22 @@ class ChessPuzzleTitle extends StatelessWidget {
   /// {@macro chess_puzzle_title}
   const ChessPuzzleTitle({
     Key? key,
-    required this.status,
+    required this.result,
   }) : super(key: key);
 
   /// The status of the puzzle.
-  final PuzzleStatus status;
+  final PuzzleResult result;
 
   @override
   Widget build(BuildContext context) {
     return PuzzleTitle(
       key: puzzleTitleKey,
-      title: status == PuzzleStatus.complete
-          ? context.l10n.puzzleCompleted
-          : context.l10n.puzzleChallengeTitle,
+      title: {
+            PuzzleResult.blackWin: "You've lost!",
+            PuzzleResult.whiteWin: "You've won!",
+            PuzzleResult.draw: "It's a draw!",
+          }[result] ??
+          'Sliding puzzle',
     );
   }
 }
@@ -328,20 +298,25 @@ class ChessPuzzleTile extends StatelessWidget {
     final puzzleState = context.select((PuzzleBloc bloc) => bloc.state);
     final chessPiece = tile.chessPiece;
     final size = sqrt(puzzleState.puzzle.tiles.length).floor();
+    final isMyMove = state.puzzleResult == PuzzleResult.undecided &&
+        state.colorToMove == ChessPieceColor.white;
     return LayoutBuilder(
       builder: (context, constraints) {
         return DragTarget<Tile>(
           onWillAccept: (draggingTile) {
-            return draggingTile?.chessPiece.canMove(puzzleState,
-                    fromTile: draggingTile, toTile: tile) ==
-                true;
+            return isMyMove &&
+                draggingTile?.chessPiece.canMove(
+                      puzzleState,
+                      fromTile: draggingTile,
+                      toTile: tile,
+                    ) ==
+                    true;
           },
           onAccept: (draggingTile) {
             context.read<PuzzleBloc>().add(
                   TileDropped(
                     draggingTile,
                     tile,
-                    size,
                   ),
                 );
           },
@@ -355,12 +330,16 @@ class ChessPuzzleTile extends StatelessWidget {
                 height: constraints.maxHeight,
                 child: chessPiece.build(context),
               ),
-              onDragStarted: () {
-                context.read<PuzzleBloc>().add(TileDragStarted(tile));
-              },
-              onDragEnd: (d) {
-                context.read<PuzzleBloc>().add(TileDragEnded(tile));
-              },
+              onDragStarted: isMyMove
+                  ? () {
+                      context.read<PuzzleBloc>().add(TileDragStarted(tile));
+                    }
+                  : null,
+              onDragEnd: isMyMove
+                  ? (d) {
+                      context.read<PuzzleBloc>().add(TileDragEnded(tile));
+                    }
+                  : null,
               child: TextButton(
                 style: TextButton.styleFrom(
                   primary: PuzzleColors.white,
@@ -383,7 +362,7 @@ class ChessPuzzleTile extends StatelessWidget {
                             toTile: tile,
                             color: tile.chessPiece.color,
                           )) {
-                        return PuzzleColors.yellow50;
+                        return PuzzleColors.red;
                       }
                       if (state.draggingTile?.chessPiece.canMove(
                             puzzleState,
@@ -406,7 +385,7 @@ class ChessPuzzleTile extends StatelessWidget {
                     },
                   ),
                 ),
-                onPressed: state.puzzleStatus == PuzzleStatus.incomplete
+                onPressed: state.puzzleResult == PuzzleResult.undecided
                     ? () => context.read<PuzzleBloc>().add(TileTapped(tile))
                     : null,
                 child: chessPiece.type == ChessPieceType.empty

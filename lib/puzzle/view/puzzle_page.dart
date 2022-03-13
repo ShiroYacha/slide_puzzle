@@ -1,8 +1,13 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:very_good_slide_puzzle/audio_control/audio_control.dart';
 import 'package:very_good_slide_puzzle/chess/chess.dart';
+import 'package:very_good_slide_puzzle/chess/chess_piece.dart';
+import 'package:very_good_slide_puzzle/helpers/helpers.dart';
 import 'package:very_good_slide_puzzle/l10n/l10n.dart';
 import 'package:very_good_slide_puzzle/layout/layout.dart';
 import 'package:very_good_slide_puzzle/models/models.dart';
@@ -56,7 +61,7 @@ class PuzzleView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.select((ThemeBloc bloc) => bloc.state.theme);
-    const boardSize = 5;
+    const boardSize = 3;
     return Scaffold(
       body: AnimatedContainer(
         duration: PuzzleThemeAnimationDuration.backgroundColorChange,
@@ -204,7 +209,6 @@ class PuzzleSections extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.select((ThemeBloc bloc) => bloc.state.theme);
     final state = context.select((PuzzleBloc bloc) => bloc.state);
-
     return ResponsiveLayoutBuilder(
       small: (context, child) => Column(
         children: [
@@ -241,9 +245,22 @@ class PuzzleSections extends StatelessWidget {
 /// Displays the board of the puzzle.
 /// {@endtemplate}
 @visibleForTesting
-class PuzzleBoard extends StatelessWidget {
+class PuzzleBoard extends StatefulWidget {
   /// {@macro puzzle_board}
   const PuzzleBoard({Key? key}) : super(key: key);
+
+  @override
+  State<PuzzleBoard> createState() => _PuzzleBoardState();
+}
+
+class _PuzzleBoardState extends State<PuzzleBoard> {
+  late final AudioPlayer _audioPlayer;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = getAudioPlayer();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -253,26 +270,154 @@ class PuzzleBoard extends StatelessWidget {
     final size = puzzle.getDimension();
     if (size == 0) return const CircularProgressIndicator();
 
-    return PuzzleKeyboardHandler(
-      child: BlocListener<PuzzleBloc, PuzzleState>(
-        listener: (context, state) {
-          if (theme.hasTimer && state.puzzleStatus == PuzzleStatus.complete) {
-            context.read<TimerBloc>().add(const TimerStopped());
+    return BlocListener<PuzzleBloc, PuzzleState>(
+      listener: (context, state) {
+        if (state.colorToMove == ChessPieceColor.black) {
+          _aiMoveForBlack(context.read<PuzzleBloc>(), state);
+        }
+        if (state.colorToMove == ChessPieceColor.white) {
+          _checkLegalMoveForWhite(context.read<PuzzleBloc>(), state);
+        }
+        if (theme.hasTimer && state.puzzleResult != PuzzleResult.undecided) {
+          context.read<TimerBloc>().add(const TimerStopped());
+        }
+        if (!context.read<AudioControlBloc>().state.muted) {
+          if (state.tileMovementStatus == TileMovementStatus.moved) {
+            _audioPlayer.setAsset('assets/audio/tile_move.mp3').then((e) {
+              _audioPlayer.replay();
+            });
           }
-        },
-        child: theme.layoutDelegate.boardBuilder(
-          size,
-          puzzle.tiles
-              .map(
-                (tile) => _PuzzleTile(
-                  key: Key('puzzle_tile_${tile.value}'),
-                  tile: tile,
-                ),
-              )
-              .toList(),
-        ),
+          if (state.tileMovementStatus == TileMovementStatus.dropped) {
+            _audioPlayer.setAsset('assets/audio/click.mp3').then((e) {
+              _audioPlayer.replay();
+            });
+          }
+          if (state.puzzleResult == PuzzleResult.whiteWin) {
+            _audioPlayer.setAsset('assets/audio/success.mp3').then((e) {
+              _audioPlayer.replay();
+            });
+          }
+          if (state.puzzleResult == PuzzleResult.draw) {
+            _audioPlayer.setAsset('assets/audio/sandwich.mp3').then((e) {
+              _audioPlayer.replay();
+            });
+          }
+          if (state.puzzleResult == PuzzleResult.blackWin) {
+            _audioPlayer.setAsset('assets/audio/dumbbell.mp3').then((e) {
+              _audioPlayer.replay();
+            });
+          }
+        }
+      },
+      child: theme.layoutDelegate.boardBuilder(
+        size,
+        puzzle.tiles
+            .map(
+              (tile) => _PuzzleTile(
+                key: Key('puzzle_tile_${tile.value}'),
+                tile: tile,
+              ),
+            )
+            .toList(),
       ),
     );
+  }
+
+  // TODO: improve AI
+  void _aiMoveForBlack(PuzzleBloc bloc, PuzzleState state) {
+    if (state.puzzleResult != PuzzleResult.undecided ||
+        state.colorToMove != ChessPieceColor.black) {
+      return;
+    }
+    if (_checkInsufficientMaterial(bloc, state)) {
+      bloc.add(const PuzzleEnded(PuzzleResult.draw));
+      return;
+    }
+    Future.delayed(const Duration(seconds: 1), () {
+      final moveCandidates = <TileDropped, int>{};
+      // Take the legal drop move that wins the most material
+      for (final fromTile in state.puzzle.tiles
+          .where((e) => e.chessPiece.color == state.colorToMove)) {
+        for (final toTile in state.puzzle.tiles
+            .where((e) => e.chessPiece.color != state.colorToMove)) {
+          if (fromTile.chessPiece.canMove(
+            state,
+            fromTile: fromTile,
+            toTile: toTile,
+          )) {
+            moveCandidates[TileDropped(
+              fromTile,
+              toTile,
+            )] = toTile.chessPiece.pieceValue;
+          }
+        }
+      }
+      if (moveCandidates.isNotEmpty) {
+        final maxValue = moveCandidates.values.fold(0, max);
+        bloc.add(
+          moveCandidates.entries.firstWhere((e) => e.value == maxValue).key,
+        );
+      } else {
+        var result = PuzzleResult.draw;
+        if (state.isCurrentMoveColorKingInCheck) {
+          result = state.colorJustMoved == ChessPieceColor.white
+              ? PuzzleResult.whiteWin
+              : PuzzleResult.blackWin;
+        }
+        bloc.add(PuzzleEnded(result));
+      }
+    });
+  }
+
+  bool _checkInsufficientMaterial(PuzzleBloc bloc, PuzzleState state) {
+    if (state.puzzleResult != PuzzleResult.undecided) {
+      return false;
+    }
+    if (state.puzzle.tiles.every(
+      (e) => [ChessPieceType.empty, ChessPieceType.king]
+          .contains(e.chessPiece.type),
+    )) {
+      return true;
+    }
+    return false;
+  }
+
+  void _checkLegalMoveForWhite(PuzzleBloc bloc, PuzzleState state) {
+    if (state.puzzleResult != PuzzleResult.undecided ||
+        state.colorToMove != ChessPieceColor.white) {
+      return;
+    }
+    if (_checkInsufficientMaterial(bloc, state)) {
+      bloc.add(const PuzzleEnded(PuzzleResult.draw));
+      return;
+    }
+    final moveCandidates = <TileDropped, int>{};
+    // Take the legal drop move that wins the most material
+    for (final fromTile in state.puzzle.tiles
+        .where((e) => e.chessPiece.color == state.colorToMove)) {
+      for (final toTile in state.puzzle.tiles
+          .where((e) => e.chessPiece.color != state.colorToMove)) {
+        if (fromTile.chessPiece.canMove(
+          state,
+          fromTile: fromTile,
+          toTile: toTile,
+        )) {
+          moveCandidates[TileDropped(
+            fromTile,
+            toTile,
+          )] = toTile.chessPiece.pieceValue;
+        }
+      }
+    }
+    if (moveCandidates.isEmpty) {
+      var result = PuzzleResult.draw;
+      if (state.isCurrentMoveColorKingInCheck) {
+        result = state.colorJustMoved == ChessPieceColor.white
+            ? PuzzleResult.whiteWin
+            : PuzzleResult.blackWin;
+      }
+      bloc.add(PuzzleEnded(result));
+    }
   }
 }
 
@@ -306,18 +451,9 @@ class PuzzleMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themes = context.select((ThemeBloc bloc) => bloc.state.themes);
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        ...List.generate(
-          themes.length,
-          (index) => PuzzleMenuItem(
-            theme: themes[index],
-            themeIndex: index,
-          ),
-        ),
         ResponsiveLayoutBuilder(
           small: (_, child) => const SizedBox(),
           medium: (_, child) => child!,
@@ -450,13 +586,6 @@ final puzzleNameKey = GlobalKey(debugLabel: 'puzzle_name');
 ///
 /// Used to animate the transition of [PuzzleTitle] when changing a theme.
 final puzzleTitleKey = GlobalKey(debugLabel: 'puzzle_title');
-
-/// The global key of [ColorToMoveAndResult].
-///
-/// Used to animate the transition of [ColorToMoveAndResult]
-/// when changing a theme.
-final ColorToMoveAndResultKey =
-    GlobalKey(debugLabel: 'number_of_moves_and_tiles_left');
 
 /// The global key of [AudioControl].
 ///

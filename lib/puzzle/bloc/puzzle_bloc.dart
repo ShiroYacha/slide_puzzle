@@ -4,6 +4,9 @@ import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:very_good_slide_puzzle/app/app.dart';
 import 'package:very_good_slide_puzzle/chess/chess_piece.dart';
 import 'package:very_good_slide_puzzle/models/models.dart';
 
@@ -23,6 +26,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     on<TileDragStarted>(_onTileDragStarted);
     on<TileDragEnded>(_onTileDragEnded);
     on<TileDropped>(_onTileDropped);
+    on<PuzzleEnded>(_onPuzzleEnded);
   }
   final int _size;
 
@@ -44,6 +48,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     emit(
       state.copyWith(
         draggingTile: NullableCopy(event.tile),
+        tileMovementStatus: TileMovementStatus.nothingTapped,
       ),
     );
   }
@@ -52,25 +57,76 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     emit(
       state.copyWith(
         draggingTile: const NullableCopy(null),
+        tileMovementStatus: TileMovementStatus.nothingTapped,
       ),
     );
   }
 
-  void _onTileDropped(TileDropped event, Emitter<PuzzleState> emit) {
+  Future<ChessPiece?> promotePawn({
+    required ChessPieceColor color,
+    required int id,
+  }) {
+    return showDialog<ChessPiece>(
+      context: navKey.currentContext!,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          actionsPadding: const EdgeInsets.all(8),
+          actions: [
+            ChessPiece(id, color: color, type: ChessPieceType.queen),
+            ChessPiece(id, color: color, type: ChessPieceType.rook),
+            ChessPiece(id, color: color, type: ChessPieceType.knight),
+            ChessPiece(id, color: color, type: ChessPieceType.bishop),
+          ]
+              .map(
+                (e) => TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(e);
+                  },
+                  child: SvgPicture.asset(
+                      'images/chess/Chess_${e.pieceSymbol}${e.colorCode}t45.svg'),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+
+  void _onPuzzleEnded(
+    PuzzleEnded event,
+    Emitter<PuzzleState> emit,
+  ) {
+    emit(state.copyWith(puzzleResult: event.result));
+  }
+
+  Future<void> _onTileDropped(
+    TileDropped event,
+    Emitter<PuzzleState> emit,
+  ) async {
+    ChessPiece? promotedPiece;
+    final boardSize = sqrt(state.puzzle.tiles.length).floor();
     if (event.fromTile.chessPiece.type == ChessPieceType.pawn) {
       if (event.fromTile.chessPiece.color == ChessPieceColor.white &&
-          event.toTile.currentPosition.y == 0) {
-        print('promote white!');
+          event.toTile.currentPosition.y == 1) {
+        promotedPiece = await promotePawn(
+          color: ChessPieceColor.white,
+          id: event.toTile.chessPiece.id,
+        );
       }
       if (event.fromTile.chessPiece.color == ChessPieceColor.black &&
-          event.toTile.currentPosition.y == event.boardSize) {
-        print('promote black!');
+          event.toTile.currentPosition.y == boardSize) {
+        promotedPiece = await promotePawn(
+          color: ChessPieceColor.black,
+          id: event.toTile.chessPiece.id,
+        );
       }
     }
     final newState = state.copyWith(
       colorToMove: state.colorToMove == ChessPieceColor.white
           ? ChessPieceColor.black
           : ChessPieceColor.white,
+      tileMovementStatus: TileMovementStatus.dropped,
       puzzle: Puzzle(
         tiles: [
           ...state.puzzle.tiles.where(
@@ -79,8 +135,9 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
           ),
           event.toTile.copyWith(
             currentPosition: event.toTile.currentPosition,
-            chessPiece: event.fromTile.chessPiece
-                .copyWith(id: event.toTile.chessPiece.id),
+            chessPiece: promotedPiece ??
+                event.fromTile.chessPiece
+                    .copyWith(id: event.toTile.chessPiece.id),
           ),
           event.fromTile.copyWith(
             currentPosition: event.fromTile.currentPosition,
@@ -96,16 +153,19 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     emit(
       newState.copyWith(
         puzzle: newState.puzzle.sort(),
-        puzzleStatus:
-            newState.puzzle.isComplete() ? PuzzleStatus.complete : null,
       ),
     );
   }
 
   void _onTileTapped(TileTapped event, Emitter<PuzzleState> emit) {
     final tappedTile = event.tile;
-    if (state.puzzleStatus == PuzzleStatus.incomplete) {
+    if (state.puzzleResult == PuzzleResult.undecided) {
       if (state.puzzle.isTileMovable(tappedTile)) {
+        // Cannot slide tile to get out of checks
+        if (state.isCurrentMoveColorKingInCheck) {
+          showMessage('Cannot slide to get out of checks!');
+          return;
+        }
         final mutablePuzzle = Puzzle(tiles: [...state.puzzle.tiles]);
         final puzzle = mutablePuzzle.moveTiles(tappedTile, []);
         final colorToMove = state.colorToMove == ChessPieceColor.white
@@ -114,7 +174,6 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
         emit(
           state.copyWith(
             puzzle: puzzle.sort(),
-            puzzleStatus: puzzle.isComplete() ? PuzzleStatus.complete : null,
             tileMovementStatus: TileMovementStatus.moved,
             colorToMove: colorToMove,
             lastTappedTile: tappedTile,

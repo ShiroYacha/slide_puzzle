@@ -68,15 +68,6 @@ class Puzzle extends Equatable {
     );
   }
 
-  /// Determines if the puzzle is completed.
-  bool isComplete() {
-    if (tiles.every((e) => [ChessPieceType.empty, ChessPieceType.king]
-        .contains(e.chessPiece.type))) {
-      return true;
-    }
-    return false;
-  }
-
   /// Determines if the tapped tile can move in the direction of the whitespace
   /// tile.
   bool isTileMovable(Tile tile) {

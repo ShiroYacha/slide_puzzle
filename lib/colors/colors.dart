@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 /// Defines the color palette for the puzzle UI.
@@ -85,4 +86,7 @@ abstract class PuzzleColors {
 
   /// Yellow 50
   static const Color yellow50 = Color(0xFF9E9400);
+
+  /// Red
+  static const Color red = Colors.redAccent;
 }

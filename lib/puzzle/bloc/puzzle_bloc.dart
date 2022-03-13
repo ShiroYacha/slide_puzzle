@@ -26,7 +26,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     on<TileDragEnded>(_onTileDragEnded);
     on<TileDropped>(_onTileDropped);
     on<PuzzleEnded>(_onPuzzleEnded);
-    on<PuzzleNextLevel>(_onPuzzleNextLevel);
+    on<PuzzleChangeLevel>(_onPuzzleNextLevel);
     on<PuzzleNewMode>(_onPuzzleNewMode);
   }
 
@@ -108,11 +108,10 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
   }
 
   void _onPuzzleNextLevel(
-    PuzzleNextLevel event,
+    PuzzleChangeLevel event,
     Emitter<PuzzleState> emit,
   ) {
-    final index = chessPieceFactories.indexOf(state.factory);
-    final newFactory = chessPieceFactories[index + 1];
+    final newFactory = event.factory;
     final puzzle = _generatePuzzle(newFactory.boardSize, factory: newFactory);
     emit(
       PuzzleState(

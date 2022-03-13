@@ -71,8 +71,10 @@ class PuzzleReset extends PuzzleEvent {
   const PuzzleReset();
 }
 
-class PuzzleNextLevel extends PuzzleEvent {
-  const PuzzleNextLevel();
+class PuzzleChangeLevel extends PuzzleEvent {
+  const PuzzleChangeLevel(this.factory);
+
+  final ChessPieceFactory factory;
 }
 
 class PuzzleNewMode extends PuzzleEvent {

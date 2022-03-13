@@ -60,6 +60,7 @@ class PuzzleState extends Equatable {
   /// Current factory
   final ChessPieceFactory factory;
 
+  /// The current mode
   final PuzzleMode mode;
 
   PuzzleState copyWith({
@@ -86,6 +87,13 @@ class PuzzleState extends Equatable {
       mode: mode ?? this.mode,
     );
   }
+
+  bool get canGotoPreviousFactory => chessPieceFactories.first != factory;
+  bool get canGotoNextFactory => chessPieceFactories.last != factory;
+  ChessPieceFactory get previousFactory =>
+      chessPieceFactories[chessPieceFactories.indexOf(factory) - 1];
+  ChessPieceFactory get nextFactory =>
+      chessPieceFactories[chessPieceFactories.indexOf(factory) + 1];
 
   @override
   List<Object?> get props => [

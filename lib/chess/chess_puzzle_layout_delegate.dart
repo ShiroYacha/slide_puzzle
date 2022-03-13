@@ -156,7 +156,7 @@ Widget _buildButtons(
         children: [
           const ChessPuzzleResetButton(),
           if (puzzleState.puzzleResult == PuzzleResult.whiteWin &&
-              puzzleState.factory != chessPieceFactories.last) ...[
+              puzzleState.canGotoNextFactory) ...[
             SizedBox(width: smallMode ? 8 : 16),
             const ChessPuzzleNextLevelButton(),
           ]
@@ -597,7 +597,10 @@ class ChessPuzzleNextLevelButton extends StatelessWidget {
     return PuzzleButton(
       textColor: PuzzleColors.primary0,
       backgroundColor: PuzzleColors.primary6,
-      onPressed: () => context.read<PuzzleBloc>().add(const PuzzleNextLevel()),
+      onPressed: () {
+        final bloc = context.read<PuzzleBloc>();
+        bloc.add(PuzzleChangeLevel(bloc.state.nextFactory));
+      },
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: const [

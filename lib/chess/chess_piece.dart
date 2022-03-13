@@ -212,7 +212,40 @@ class ChessPiece {
                 toTile: toTile,
                 fromTile: fromTile,
               );
-      if (checkKingSafety &&
+      var result = false;
+      switch (type) {
+        case ChessPieceType.king:
+          result = (to.x - from.x).abs() <= 1 && (to.y - from.y).abs() <= 1;
+          break;
+        case ChessPieceType.pawn:
+          result = canCapture(
+                puzzleState,
+                fromTile: fromTile,
+                toTile: toTile,
+              ) ||
+              (to.y - from.y) == attackVector &&
+                  from.x == to.x &&
+                  toTile.chessPiece.type == ChessPieceType.empty;
+          break;
+        case ChessPieceType.knight:
+          result = ((to.x - from.x).abs() == 2 && (to.y - from.y).abs() == 1) ||
+              ((to.x - from.x).abs() == 1 && (to.y - from.y).abs() == 2);
+          break;
+        case ChessPieceType.bishop:
+          result = attackingInDiagonaleLine;
+          break;
+        case ChessPieceType.rook:
+          result = attackingInStraightLine;
+          break;
+        case ChessPieceType.queen:
+          result = attackingInDiagonaleLine || attackingInStraightLine;
+          break;
+        case ChessPieceType.empty:
+          result = false;
+          break;
+      }
+      if (result &&
+          checkKingSafety &&
           !checkIfMoveGetsOutOfCheck(
             puzzleState,
             fromTile: fromTile,
@@ -221,30 +254,7 @@ class ChessPiece {
         // Cannot move and make your own king checked
         return false;
       }
-      switch (type) {
-        case ChessPieceType.king:
-          return (to.x - from.x).abs() <= 1 && (to.y - from.y).abs() <= 1;
-        case ChessPieceType.pawn:
-          return canCapture(
-                puzzleState,
-                fromTile: fromTile,
-                toTile: toTile,
-              ) ||
-              (to.y - from.y) == attackVector &&
-                  from.x == to.x &&
-                  toTile.chessPiece.type == ChessPieceType.empty;
-        case ChessPieceType.knight:
-          return ((to.x - from.x).abs() == 2 && (to.y - from.y).abs() == 1) ||
-              ((to.x - from.x).abs() == 1 && (to.y - from.y).abs() == 2);
-        case ChessPieceType.bishop:
-          return attackingInDiagonaleLine;
-        case ChessPieceType.rook:
-          return attackingInStraightLine;
-        case ChessPieceType.queen:
-          return attackingInDiagonaleLine || attackingInStraightLine;
-        case ChessPieceType.empty:
-          return false;
-      }
+      return result;
     }
     return false;
   }
@@ -283,9 +293,10 @@ const chessPieceFactories = [
   ChessPieceLevel3Factory(),
   ChessPieceLevel4Factory(),
   ChessPieceLevel5Factory(),
+  // ChessPieceNormalBoardFactory(),
 ];
 
-const defaultFactory = ChessPieceLevel1Factory();
+const defaultFactory = ChessPieceLevel5Factory();
 
 class ChessPieceLevel1Factory extends ChessPieceFactory {
   const ChessPieceLevel1Factory();
@@ -462,13 +473,13 @@ class ChessPieceLevel5Factory extends ChessPieceFactory {
     final color =
         index > maxIndex / 2 ? ChessPieceColor.white : ChessPieceColor.black;
     final size = sqrt(maxIndex).floor();
-    if (index == 1 || index == maxIndex) {
+    if (index == 3 || index == maxIndex - 2) {
       return ChessPiece(
         index,
         color: color,
         type: ChessPieceType.king,
       );
-    } else if (index <= 2 || index > maxIndex - 2) {
+    } else if ([1, 5, maxIndex, maxIndex - 4].contains(index)) {
       return ChessPiece(
         index,
         color: color,
@@ -496,4 +507,64 @@ class ChessPieceLevel5Factory extends ChessPieceFactory {
 
   @override
   int get boardSize => 5;
+}
+
+class ChessPieceNormalBoardFactory extends ChessPieceFactory {
+  const ChessPieceNormalBoardFactory();
+
+  @override
+  ChessPiece getPiece({
+    required int index,
+    required int maxIndex,
+  }) {
+    final color =
+        index > maxIndex / 2 ? ChessPieceColor.white : ChessPieceColor.black;
+    final size = sqrt(maxIndex).floor();
+    if (index == 5 || index == maxIndex - 3) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.king,
+      );
+    }
+    if (index == 4 || index == maxIndex - 4) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.queen,
+      );
+    } else if ([1, 8, maxIndex, maxIndex - 7].contains(index)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.rook,
+      );
+    } else if ([2, 7, maxIndex - 1, maxIndex - 6].contains(index)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.knight,
+      );
+    } else if ([3, 6, maxIndex - 2, maxIndex - 5].contains(index)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.bishop,
+      );
+    } else if ((index > size && index <= size * 2) ||
+        (index > maxIndex - size * 2 && index <= maxIndex - size)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.pawn,
+      );
+    }
+    return ChessPiece.empty(index);
+  }
+
+  @override
+  String get name => 'Board 6';
+
+  @override
+  int get boardSize => 8;
 }

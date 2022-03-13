@@ -270,7 +270,7 @@ class _PuzzleBoardState extends State<PuzzleBoard> {
 
     return BlocListener<PuzzleBloc, PuzzleState>(
       listener: (context, state) {
-        _checkLegalMove(context.read<PuzzleBloc>(), state, state.colorToMove);
+        // _checkLegalMove(context.read<PuzzleBloc>(), state, state.colorToMove);
         if (theme.hasTimer && state.puzzleResult != PuzzleResult.undecided) {
           context.read<TimerBloc>().add(const TimerStopped());
         }

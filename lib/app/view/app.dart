@@ -66,7 +66,7 @@ class _AppState extends State<App> {
 
     _storage.ready.then((ready) async {
       if (ready) {
-        if (true || _storage.getItem('not_first_time') != true) {
+        if (_storage.getItem('not_first_time') != true) {
           await showTutorial();
           await _storage.setItem('not_first_time', true);
         }

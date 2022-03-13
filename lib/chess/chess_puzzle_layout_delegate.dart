@@ -215,7 +215,7 @@ class ChessPuzzleTitle extends StatelessWidget {
             PuzzleResult.whiteWin: "You've won!",
             PuzzleResult.draw: "It's a draw!",
           }[result] ??
-          'Sliding puzzle',
+          'Sliding chess',
     );
   }
 }

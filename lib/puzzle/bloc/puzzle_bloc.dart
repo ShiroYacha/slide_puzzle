@@ -65,7 +65,13 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
   Future<ChessPiece?> promotePawn({
     required ChessPieceColor color,
     required int id,
+    bool autoPromote = false,
   }) {
+    if (autoPromote) {
+      return Future.value(
+        ChessPiece(id, color: color, type: ChessPieceType.queen),
+      );
+    }
     return showDialog<ChessPiece>(
       context: navKey.currentContext!,
       barrierDismissible: false,
@@ -84,7 +90,8 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
                     Navigator.of(context).pop(e);
                   },
                   child: SvgPicture.asset(
-                      'images/chess/Chess_${e.pieceSymbol}${e.colorCode}t45.svg'),
+                    'assets/images/chess/Chess_${e.pieceSymbol}${e.colorCode}t45.svg',
+                  ),
                 ),
               )
               .toList(),
@@ -112,6 +119,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
         promotedPiece = await promotePawn(
           color: ChessPieceColor.white,
           id: event.toTile.chessPiece.id,
+          autoPromote: event.autoPromote,
         );
       }
       if (event.fromTile.chessPiece.color == ChessPieceColor.black &&
@@ -119,6 +127,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
         promotedPiece = await promotePawn(
           color: ChessPieceColor.black,
           id: event.toTile.chessPiece.id,
+          autoPromote: event.autoPromote,
         );
       }
     }
@@ -155,6 +164,8 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
         puzzle: newState.puzzle.sort(),
       ),
     );
+
+    _engineMoveForBlack();
   }
 
   void _onTileTapped(TileTapped event, Emitter<PuzzleState> emit) {
@@ -188,6 +199,85 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
       emit(
         state.copyWith(tileMovementStatus: TileMovementStatus.cannotBeMoved),
       );
+    }
+    _engineMoveForBlack();
+  }
+
+  bool checkInsufficientMaterial() {
+    if (state.puzzleResult != PuzzleResult.undecided) {
+      return false;
+    }
+    if (state.puzzle.tiles.every(
+      (e) => [ChessPieceType.empty, ChessPieceType.king]
+          .contains(e.chessPiece.type),
+    )) {
+      return true;
+    }
+    return false;
+  }
+
+  int timesTheTileIsDefended(Tile tile, ChessPieceColor color) {
+    return state.puzzle.tiles
+        .where(
+          (e) =>
+              e.chessPiece.color == color &&
+              e.chessPiece.canMove(
+                state,
+                fromTile: e,
+                toTile: e,
+                checkPiece: false,
+                checkTurn: false,
+              ),
+        )
+        .length;
+  }
+
+  // TODO: improve engine
+  void _engineMoveForBlack() {
+    if (state.puzzleResult != PuzzleResult.undecided ||
+        state.colorToMove != ChessPieceColor.black) {
+      return;
+    }
+    if (checkInsufficientMaterial()) {
+      add(const PuzzleEnded(PuzzleResult.draw));
+      return;
+    }
+
+    final moveCandidates = <TileDropped, int>{};
+    // Take the legal drop move that wins the most material
+    // or undefended check
+    for (final fromTile in state.puzzle.tiles
+        .where((e) => e.chessPiece.color == state.colorToMove)) {
+      for (final toTile in state.puzzle.tiles
+          .where((e) => e.chessPiece.color != state.colorToMove)) {
+        if (fromTile.chessPiece.canMove(
+          state,
+          fromTile: fromTile,
+          toTile: toTile,
+        )) {
+          moveCandidates[TileDropped(
+            fromTile,
+            toTile,
+            autoPromote: true,
+          )] = toTile.chessPiece.pieceValue;
+        }
+      }
+    }
+    if (moveCandidates.isNotEmpty) {
+      Future.delayed(const Duration(seconds: 1), () {
+        final maxValue = moveCandidates.values.fold(0, max);
+        add(
+          moveCandidates.entries.firstWhere((e) => e.value == maxValue).key,
+        );
+      });
+    } else {
+      var result = PuzzleResult.draw;
+      if (state.isCurrentMoveColorKingInCheck) {
+        result = state.colorJustMoved == ChessPieceColor.white
+            ? PuzzleResult.whiteWin
+            : PuzzleResult.blackWin;
+      }
+      add(PuzzleEnded(result));
     }
   }
 

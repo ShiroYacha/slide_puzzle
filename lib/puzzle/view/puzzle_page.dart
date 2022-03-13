@@ -272,9 +272,6 @@ class _PuzzleBoardState extends State<PuzzleBoard> {
 
     return BlocListener<PuzzleBloc, PuzzleState>(
       listener: (context, state) {
-        if (state.colorToMove == ChessPieceColor.black) {
-          _aiMoveForBlack(context.read<PuzzleBloc>(), state);
-        }
         if (state.colorToMove == ChessPieceColor.white) {
           _checkLegalMoveForWhite(context.read<PuzzleBloc>(), state);
         }
@@ -323,71 +320,12 @@ class _PuzzleBoardState extends State<PuzzleBoard> {
     );
   }
 
-  // TODO: improve AI
-  void _aiMoveForBlack(PuzzleBloc bloc, PuzzleState state) {
-    if (state.puzzleResult != PuzzleResult.undecided ||
-        state.colorToMove != ChessPieceColor.black) {
-      return;
-    }
-    if (_checkInsufficientMaterial(bloc, state)) {
-      bloc.add(const PuzzleEnded(PuzzleResult.draw));
-      return;
-    }
-    Future.delayed(const Duration(seconds: 1), () {
-      final moveCandidates = <TileDropped, int>{};
-      // Take the legal drop move that wins the most material
-      for (final fromTile in state.puzzle.tiles
-          .where((e) => e.chessPiece.color == state.colorToMove)) {
-        for (final toTile in state.puzzle.tiles
-            .where((e) => e.chessPiece.color != state.colorToMove)) {
-          if (fromTile.chessPiece.canMove(
-            state,
-            fromTile: fromTile,
-            toTile: toTile,
-          )) {
-            moveCandidates[TileDropped(
-              fromTile,
-              toTile,
-            )] = toTile.chessPiece.pieceValue;
-          }
-        }
-      }
-      if (moveCandidates.isNotEmpty) {
-        final maxValue = moveCandidates.values.fold(0, max);
-        bloc.add(
-          moveCandidates.entries.firstWhere((e) => e.value == maxValue).key,
-        );
-      } else {
-        var result = PuzzleResult.draw;
-        if (state.isCurrentMoveColorKingInCheck) {
-          result = state.colorJustMoved == ChessPieceColor.white
-              ? PuzzleResult.whiteWin
-              : PuzzleResult.blackWin;
-        }
-        bloc.add(PuzzleEnded(result));
-      }
-    });
-  }
-
-  bool _checkInsufficientMaterial(PuzzleBloc bloc, PuzzleState state) {
-    if (state.puzzleResult != PuzzleResult.undecided) {
-      return false;
-    }
-    if (state.puzzle.tiles.every(
-      (e) => [ChessPieceType.empty, ChessPieceType.king]
-          .contains(e.chessPiece.type),
-    )) {
-      return true;
-    }
-    return false;
-  }
-
   void _checkLegalMoveForWhite(PuzzleBloc bloc, PuzzleState state) {
     if (state.puzzleResult != PuzzleResult.undecided ||
         state.colorToMove != ChessPieceColor.white) {
       return;
     }
-    if (_checkInsufficientMaterial(bloc, state)) {
+    if (bloc.checkInsufficientMaterial()) {
       bloc.add(const PuzzleEnded(PuzzleResult.draw));
       return;
     }

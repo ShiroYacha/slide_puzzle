@@ -46,14 +46,16 @@ class TileDragStarted extends PuzzleEvent {
 class TileDropped extends PuzzleEvent {
   const TileDropped(
     this.fromTile,
-    this.toTile,
-  );
+    this.toTile, {
+    this.autoPromote = false,
+  });
 
   final Tile fromTile;
   final Tile toTile;
+  final bool autoPromote;
 
   @override
-  List<Object> get props => [fromTile, toTile];
+  List<Object> get props => [fromTile, toTile, autoPromote];
 }
 
 class TileDragEnded extends PuzzleEvent {

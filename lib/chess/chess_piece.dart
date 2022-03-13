@@ -62,7 +62,7 @@ class ChessPiece {
     final puzzleState = context.select((PuzzleBloc bloc) => bloc.state);
     return Center(
       child: SvgPicture.asset(
-        'images/chess/Chess_$pieceSymbol${colorCode}t45.svg',
+        'assets/images/chess/Chess_$pieceSymbol${colorCode}t45.svg',
         width: 60 / sqrt(puzzleState.puzzle.tiles.length).floor() * 3,
       ),
     );

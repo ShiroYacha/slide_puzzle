@@ -1,9 +1,19 @@
 {
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR\" run lint"
+    ]
+  },
   "hosting": {
     "public": "build/web",
-    "site": "slide-puzzle-dev-34815",
-    "cleanUrls": true,
-    "trailingSlash": false,
-    "ignore": [".firebase", "firebase.json", "__/**"]
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
   }
 }

@@ -104,4 +104,49 @@ class PuzzleState extends Equatable {
           ),
     );
   }
+
+  bool hasAnyTileBetweenStraightOrDiagonaleLine({
+    required Tile fromTile,
+    required Tile toTile,
+  }) {
+    if (fromTile.currentPosition.x == toTile.currentPosition.x) {
+      final minY = min(fromTile.currentPosition.y, toTile.currentPosition.y);
+      final maxY = max(fromTile.currentPosition.y, toTile.currentPosition.y);
+      return puzzle.tiles.any(
+        (e) =>
+            (e.isWhitespace || e.chessPiece.type != ChessPieceType.empty) &&
+            e.currentPosition.x == fromTile.currentPosition.x &&
+            e.currentPosition.y > minY &&
+            e.currentPosition.y < maxY,
+      );
+    } else if (fromTile.currentPosition.y == toTile.currentPosition.y) {
+      final minX = min(fromTile.currentPosition.x, toTile.currentPosition.x);
+      final maxX = max(fromTile.currentPosition.x, toTile.currentPosition.x);
+      return puzzle.tiles.any(
+        (e) =>
+            (e.isWhitespace || e.chessPiece.type != ChessPieceType.empty) &&
+            e.currentPosition.y == fromTile.currentPosition.y &&
+            e.currentPosition.x > minX &&
+            e.currentPosition.x < maxX,
+      );
+    } else if ((fromTile.currentPosition.x - toTile.currentPosition.x).abs() ==
+        (fromTile.currentPosition.y - toTile.currentPosition.y).abs()) {
+      final minY = min(fromTile.currentPosition.y, toTile.currentPosition.y);
+      final maxY = max(fromTile.currentPosition.y, toTile.currentPosition.y);
+      final minX = min(fromTile.currentPosition.x, toTile.currentPosition.x);
+      final maxX = max(fromTile.currentPosition.x, toTile.currentPosition.x);
+      return puzzle.tiles.any(
+        (e) =>
+            (e.isWhitespace || e.chessPiece.type != ChessPieceType.empty) &&
+            e.currentPosition.x > minX &&
+            e.currentPosition.x < maxX &&
+            e.currentPosition.y > minY &&
+            e.currentPosition.y < maxY &&
+            ((e.currentPosition.x - minX) / (e.currentPosition.y - minY))
+                    .abs() ==
+                ((maxX - minX) / (maxY - minY)).abs(),
+      );
+    }
+    return false;
+  }
 }

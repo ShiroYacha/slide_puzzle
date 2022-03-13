@@ -154,6 +154,18 @@ class ChessPiece {
       return false;
     }
     final attackVector = color == ChessPieceColor.white ? -1 : 1;
+    final attackingInStraightLine =
+        ((to.x - from.x).abs() == 0 || (to.y - from.y).abs() == 0) &&
+            !puzzleState.hasAnyTileBetweenStraightOrDiagonaleLine(
+              toTile: toTile,
+              fromTile: fromTile,
+            );
+    final attackingInDiagonaleLine =
+        (to.x - from.x).abs() == (to.y - from.y).abs() &&
+            !puzzleState.hasAnyTileBetweenStraightOrDiagonaleLine(
+              toTile: toTile,
+              fromTile: fromTile,
+            );
     switch (type) {
       case ChessPieceType.king:
         return (to.x - from.x).abs() <= 1 &&
@@ -177,17 +189,14 @@ class ChessPiece {
         return ((to.x - from.x).abs() == 2 && (to.y - from.y).abs() == 1) ||
             ((to.x - from.x).abs() == 1 && (to.y - from.y).abs() == 2);
       case ChessPieceType.bishop:
-        return ((to.x - from.x).abs() / (to.y - from.y).abs()) == 1;
+        return attackingInDiagonaleLine;
       case ChessPieceType.rook:
-        return (to.x - from.x).abs() == 0 || (to.y - from.y).abs() == 0;
+        return attackingInStraightLine;
       case ChessPieceType.queen:
-        return ((to.x - from.x).abs() / (to.y - from.y).abs()) == 1 ||
-            (to.x - from.x).abs() == 0 ||
-            (to.y - from.y).abs() == 0;
+        return attackingInDiagonaleLine || attackingInStraightLine;
       case ChessPieceType.empty:
         return false;
     }
-    return false;
   }
 }
 
@@ -224,7 +233,7 @@ class ChessPieceFactory {
       return ChessPiece(
         index,
         color: color,
-        type: ChessPieceType.rook,
+        type: ChessPieceType.bishop,
       );
     }
     // if (index == 2 || index == maxIndex - 1) {

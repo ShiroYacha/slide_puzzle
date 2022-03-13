@@ -61,7 +61,6 @@ class PuzzleView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.select((ThemeBloc bloc) => bloc.state.theme);
-    const boardSize = 3;
     return Scaffold(
       body: AnimatedContainer(
         duration: PuzzleThemeAnimationDuration.backgroundColorChange,
@@ -74,9 +73,8 @@ class PuzzleView extends StatelessWidget {
               ),
             ),
             BlocProvider(
-              create: (context) => PuzzleBloc(
-                boardSize,
-              )..add(
+              create: (context) => PuzzleBloc()
+                ..add(
                   const PuzzleInitialized(),
                 ),
             ),
@@ -272,9 +270,7 @@ class _PuzzleBoardState extends State<PuzzleBoard> {
 
     return BlocListener<PuzzleBloc, PuzzleState>(
       listener: (context, state) {
-        if (state.colorToMove == ChessPieceColor.white) {
-          _checkLegalMoveForWhite(context.read<PuzzleBloc>(), state);
-        }
+        _checkLegalMove(context.read<PuzzleBloc>(), state, state.colorToMove);
         if (theme.hasTimer && state.puzzleResult != PuzzleResult.undecided) {
           context.read<TimerBloc>().add(const TimerStopped());
         }
@@ -300,7 +296,10 @@ class _PuzzleBoardState extends State<PuzzleBoard> {
             });
           }
           if (state.puzzleResult == PuzzleResult.blackWin) {
-            _audioPlayer.setAsset('assets/audio/dumbbell.mp3').then((e) {
+            _audioPlayer
+                .setAsset(
+                    'assets/audio/${state.mode == PuzzleMode.puzzle ? 'dumbbell' : 'success'}.mp3')
+                .then((e) {
               _audioPlayer.replay();
             });
           }
@@ -320,9 +319,10 @@ class _PuzzleBoardState extends State<PuzzleBoard> {
     );
   }
 
-  void _checkLegalMoveForWhite(PuzzleBloc bloc, PuzzleState state) {
+  void _checkLegalMove(
+      PuzzleBloc bloc, PuzzleState state, ChessPieceColor color) {
     if (state.puzzleResult != PuzzleResult.undecided ||
-        state.colorToMove != ChessPieceColor.white) {
+        state.colorToMove != color) {
       return;
     }
     if (bloc.checkInsufficientMaterial()) {

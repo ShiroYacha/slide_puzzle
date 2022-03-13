@@ -18,6 +18,13 @@ enum PuzzleResult {
   draw,
 }
 
+enum PuzzleMode {
+  puzzle,
+  pvpRandom,
+  pvpLocal,
+  pvpInvite,
+}
+
 class PuzzleState extends Equatable {
   const PuzzleState({
     this.puzzle = const Puzzle(tiles: []),
@@ -26,6 +33,8 @@ class PuzzleState extends Equatable {
     this.colorToMove = ChessPieceColor.white,
     this.lastTappedTile,
     this.draggingTile,
+    this.factory = defaultFactory,
+    this.mode = PuzzleMode.puzzle,
   });
 
   /// [Puzzle] containing the current tile arrangement.
@@ -48,6 +57,11 @@ class PuzzleState extends Equatable {
   /// Result of the puzzle
   final PuzzleResult puzzleResult;
 
+  /// Current factory
+  final ChessPieceFactory factory;
+
+  final PuzzleMode mode;
+
   PuzzleState copyWith({
     Puzzle? puzzle,
     PuzzleResult? puzzleResult,
@@ -55,6 +69,8 @@ class PuzzleState extends Equatable {
     ChessPieceColor? colorToMove,
     Tile? lastTappedTile,
     NullableCopy<Tile>? draggingTile,
+    ChessPieceFactory? factory,
+    PuzzleMode? mode,
   }) {
     return PuzzleState(
       puzzle: puzzle ?? this.puzzle,
@@ -62,10 +78,12 @@ class PuzzleState extends Equatable {
       tileMovementStatus: tileMovementStatus ?? this.tileMovementStatus,
       colorToMove: colorToMove ?? this.colorToMove,
       lastTappedTile: lastTappedTile ?? this.lastTappedTile,
+      factory: factory ?? this.factory,
       draggingTile: NullableCopy.resolve(
         draggingTile,
         orElse: this.draggingTile,
       ),
+      mode: mode ?? this.mode,
     );
   }
 
@@ -77,6 +95,8 @@ class PuzzleState extends Equatable {
         colorToMove,
         lastTappedTile,
         draggingTile,
+        factory,
+        mode,
       ];
 
   ChessPieceColor get colorJustMoved => colorToMove == ChessPieceColor.white

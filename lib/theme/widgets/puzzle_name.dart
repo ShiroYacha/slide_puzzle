@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:very_good_slide_puzzle/layout/layout.dart';
+import 'package:very_good_slide_puzzle/puzzle/puzzle.dart';
 import 'package:very_good_slide_puzzle/theme/theme.dart';
 import 'package:very_good_slide_puzzle/typography/typography.dart';
 
@@ -21,21 +23,22 @@ class PuzzleName extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.select((ThemeBloc bloc) => bloc.state.theme);
+    final factory = context.select((PuzzleBloc bloc) => bloc.state.factory);
     final nameColor = color ?? theme.nameColor;
-
-    return ResponsiveLayoutBuilder(
-      small: (context, child) => const SizedBox(),
-      medium: (context, child) => const SizedBox(),
-      large: (context, child) => AnimatedDefaultTextStyle(
-        style: PuzzleTextStyle.headline5.copyWith(
-          color: nameColor,
-        ),
-        duration: PuzzleThemeAnimationDuration.textStyle,
-        child: Text(
-          theme.name,
-          key: const Key('puzzle_name_theme'),
-        ),
+    final text = AnimatedDefaultTextStyle(
+      style: PuzzleTextStyle.headline5.copyWith(
+        color: nameColor,
       ),
+      duration: PuzzleThemeAnimationDuration.textStyle,
+      child: Text(
+        factory.name,
+        key: const Key('puzzle_name_theme'),
+      ),
+    );
+    return ResponsiveLayoutBuilder(
+      small: (context, child) => Center(child: text),
+      medium: (context, child) => Center(child: text),
+      large: (context, child) => text,
     );
   }
 }

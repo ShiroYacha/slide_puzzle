@@ -70,3 +70,15 @@ class TileDragEnded extends PuzzleEvent {
 class PuzzleReset extends PuzzleEvent {
   const PuzzleReset();
 }
+
+class PuzzleNextLevel extends PuzzleEvent {
+  const PuzzleNextLevel();
+}
+
+class PuzzleNewMode extends PuzzleEvent {
+  const PuzzleNewMode(this.mode);
+  final PuzzleMode mode;
+
+  @override
+  List<Object> get props => [mode];
+}

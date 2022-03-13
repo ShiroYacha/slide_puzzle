@@ -43,8 +43,12 @@ class ChessPuzzleLayoutDelegate extends PuzzleLayoutDelegate {
           medium: 48,
         ),
         ResponsiveLayoutBuilder(
-          small: (_, child) => const ChessPuzzleShuffleButton(),
-          medium: (_, child) => const ChessPuzzleShuffleButton(),
+          small: (context, child) => _buildButtons(
+            context,
+          ),
+          medium: (context, child) => _buildButtons(
+            context,
+          ),
           large: (_, __) => const SizedBox(),
         ),
         const ResponsiveGap(
@@ -136,6 +140,34 @@ class ChessPuzzleLayoutDelegate extends PuzzleLayoutDelegate {
   List<Object?> get props => [];
 }
 
+Widget _buildButtons(
+  BuildContext context, {
+  bool smallMode = true,
+}) {
+  final puzzleState = context.select((PuzzleBloc bloc) => bloc.state);
+
+  return Column(
+    crossAxisAlignment:
+        smallMode ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+    children: [
+      Row(
+        mainAxisAlignment:
+            smallMode ? MainAxisAlignment.center : MainAxisAlignment.start,
+        children: [
+          const ChessPuzzleResetButton(),
+          if (puzzleState.puzzleResult == PuzzleResult.whiteWin &&
+              puzzleState.factory != chessPieceFactories.last) ...[
+            SizedBox(width: smallMode ? 8 : 16),
+            const ChessPuzzleNextLevelButton(),
+          ]
+        ],
+      ),
+      SizedBox(height: smallMode ? 16 : 20),
+      const ChessPuzzleModeButton(),
+    ],
+  );
+}
+
 /// {@template chess_start_section}
 /// Displays the start section of the puzzle based on [state].
 /// {@endtemplate}
@@ -165,7 +197,7 @@ class ChessStartSection extends StatelessWidget {
         ),
         const ResponsiveGap(large: 16),
         ChessPuzzleTitle(
-          result: state.puzzleResult,
+          state: state,
         ),
         const ResponsiveGap(
           small: 12,
@@ -182,7 +214,10 @@ class ChessStartSection extends StatelessWidget {
         ResponsiveLayoutBuilder(
           small: (_, __) => const SizedBox(),
           medium: (_, __) => const SizedBox(),
-          large: (_, __) => const ChessPuzzleShuffleButton(),
+          large: (context, __) => _buildButtons(
+            context,
+            smallMode: false,
+          ),
         ),
       ],
     );
@@ -200,21 +235,23 @@ class ChessPuzzleTitle extends StatelessWidget {
   /// {@macro chess_puzzle_title}
   const ChessPuzzleTitle({
     Key? key,
-    required this.result,
+    required this.state,
   }) : super(key: key);
 
-  /// The status of the puzzle.
-  final PuzzleResult result;
+  /// The state of the puzzle.
+  final PuzzleState state;
 
   @override
   Widget build(BuildContext context) {
     return PuzzleTitle(
       key: puzzleTitleKey,
       title: {
-            PuzzleResult.blackWin: "You've lost!",
-            PuzzleResult.whiteWin: "You've won!",
+            PuzzleResult.blackWin:
+                state.mode == PuzzleMode.puzzle ? "You've lost!" : 'Black won!',
+            PuzzleResult.whiteWin:
+                state.mode == PuzzleMode.puzzle ? "You've lost!" : 'White won!',
             PuzzleResult.draw: "It's a draw!",
-          }[result] ??
+          }[state.puzzleResult] ??
           'Sliding chess',
     );
   }
@@ -299,7 +336,9 @@ class ChessPuzzleTile extends StatelessWidget {
     final chessPiece = tile.chessPiece;
     final size = sqrt(puzzleState.puzzle.tiles.length).floor();
     final isMyMove = state.puzzleResult == PuzzleResult.undecided &&
-        state.colorToMove == ChessPieceColor.white;
+        ((state.mode == PuzzleMode.puzzle &&
+                state.colorToMove == ChessPieceColor.white) ||
+            (state.mode == PuzzleMode.pvpLocal));
     return LayoutBuilder(
       builder: (context, constraints) {
         return DragTarget<Tile>(
@@ -422,9 +461,106 @@ Color _lighten(Color color, [double amount = .1]) {
 /// Displays the button to shuffle the puzzle.
 /// {@endtemplate}
 @visibleForTesting
-class ChessPuzzleShuffleButton extends StatelessWidget {
+class ChessPuzzleModeButton extends StatelessWidget {
   /// {@macro puzzle_shuffle_button}
-  const ChessPuzzleShuffleButton({Key? key}) : super(key: key);
+  const ChessPuzzleModeButton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final mode = context.select((PuzzleBloc bloc) => bloc.state.mode);
+    const icons = {
+      PuzzleMode.puzzle: Icons.flag,
+      PuzzleMode.pvpInvite: Icons.insert_invitation,
+      PuzzleMode.pvpLocal: Icons.mobile_screen_share,
+      PuzzleMode.pvpRandom: Icons.shuffle,
+    };
+    const labels = {
+      PuzzleMode.puzzle: 'Puzzle',
+      PuzzleMode.pvpInvite: 'Invite PvP',
+      PuzzleMode.pvpLocal: 'Local PvP',
+      PuzzleMode.pvpRandom: 'Random PvP',
+    };
+    final bloc = context.read<PuzzleBloc>();
+    return PuzzleButton(
+      textColor: PuzzleColors.primary0,
+      backgroundColor: PuzzleColors.primary2,
+      onPressed: () async {
+        final newMode = await showDialog<PuzzleMode>(
+          context: context,
+          builder: (ctx) {
+            return AlertDialog(
+              backgroundColor: Colors.black,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PuzzleMode.puzzle,
+                  PuzzleMode.pvpLocal,
+                  // PuzzleMode.pvpRandom,
+                  // PuzzleMode.pvpInvite,
+                ].fold<List<Widget>>(
+                  <Widget>[],
+                  (pe, v) => [
+                    ...pe,
+                    if (v != PuzzleMode.puzzle) const Gap(16),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(v),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              icons[v],
+                              size: 30,
+                            ),
+                            const Gap(10),
+                            Text(
+                              labels[v]!,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headline5
+                                  ?.copyWith(
+                                    fontFamily: 'GoogleSans',
+                                    color: PuzzleColors.white,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ).toList(),
+              ),
+            );
+          },
+        );
+        bloc.add(PuzzleNewMode(newMode!));
+      },
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icons[mode],
+          ),
+          const Gap(10),
+          Text(
+            labels[mode]!,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// {@template puzzle_shuffle_button}
+/// Displays the button to shuffle the puzzle.
+/// {@endtemplate}
+@visibleForTesting
+class ChessPuzzleResetButton extends StatelessWidget {
+  /// {@macro puzzle_shuffle_button}
+  const ChessPuzzleResetButton({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -442,6 +578,32 @@ class ChessPuzzleShuffleButton extends StatelessWidget {
           ),
           const Gap(10),
           Text(context.l10n.puzzleReset),
+        ],
+      ),
+    );
+  }
+}
+
+/// {@template puzzle_shuffle_button}
+/// Displays the button to shuffle the puzzle.
+/// {@endtemplate}
+@visibleForTesting
+class ChessPuzzleNextLevelButton extends StatelessWidget {
+  /// {@macro puzzle_shuffle_button}
+  const ChessPuzzleNextLevelButton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return PuzzleButton(
+      textColor: PuzzleColors.primary0,
+      backgroundColor: PuzzleColors.primary6,
+      onPressed: () => context.read<PuzzleBloc>().add(const PuzzleNextLevel()),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.arrow_forward),
+          Gap(10),
+          Text('To Next'),
         ],
       ),
     );

@@ -16,8 +16,7 @@ part 'puzzle_event.dart';
 part 'puzzle_state.dart';
 
 class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
-  PuzzleBloc(
-    this._size, {
+  PuzzleBloc({
     this.random,
   }) : super(const PuzzleState()) {
     on<PuzzleInitialized>(_onPuzzleInitialized);
@@ -27,8 +26,9 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     on<TileDragEnded>(_onTileDragEnded);
     on<TileDropped>(_onTileDropped);
     on<PuzzleEnded>(_onPuzzleEnded);
+    on<PuzzleNextLevel>(_onPuzzleNextLevel);
+    on<PuzzleNewMode>(_onPuzzleNewMode);
   }
-  final int _size;
 
   final Random? random;
 
@@ -36,7 +36,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     PuzzleInitialized event,
     Emitter<PuzzleState> emit,
   ) {
-    final puzzle = _generatePuzzle(_size);
+    final puzzle = _generatePuzzle(state.factory.boardSize);
     emit(
       PuzzleState(
         puzzle: puzzle.sort(),
@@ -107,6 +107,34 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     emit(state.copyWith(puzzleResult: event.result));
   }
 
+  void _onPuzzleNextLevel(
+    PuzzleNextLevel event,
+    Emitter<PuzzleState> emit,
+  ) {
+    final index = chessPieceFactories.indexOf(state.factory);
+    final newFactory = chessPieceFactories[index + 1];
+    final puzzle = _generatePuzzle(newFactory.boardSize, factory: newFactory);
+    emit(
+      PuzzleState(
+        factory: newFactory,
+        puzzle: puzzle.sort(),
+      ),
+    );
+  }
+
+  void _onPuzzleNewMode(
+    PuzzleNewMode event,
+    Emitter<PuzzleState> emit,
+  ) {
+    final puzzle = _generatePuzzle(state.factory.boardSize);
+    emit(
+      PuzzleState(
+        mode: event.mode,
+        puzzle: puzzle.sort(),
+      ),
+    );
+  }
+
   Future<void> _onTileDropped(
     TileDropped event,
     Emitter<PuzzleState> emit,
@@ -164,8 +192,9 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
         puzzle: newState.puzzle.sort(),
       ),
     );
-
-    _engineMoveForBlack();
+    if (state.mode == PuzzleMode.puzzle) {
+      _engineMoveForBlack();
+    }
   }
 
   void _onTileTapped(TileTapped event, Emitter<PuzzleState> emit) {
@@ -200,7 +229,9 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
         state.copyWith(tileMovementStatus: TileMovementStatus.cannotBeMoved),
       );
     }
-    _engineMoveForBlack();
+    if (state.mode == PuzzleMode.puzzle) {
+      _engineMoveForBlack();
+    }
   }
 
   bool checkInsufficientMaterial() {
@@ -248,8 +279,9 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     // or undefended check
     for (final fromTile in state.puzzle.tiles
         .where((e) => e.chessPiece.color == state.colorToMove)) {
-      for (final toTile in state.puzzle.tiles
-          .where((e) => e.chessPiece.color != state.colorToMove)) {
+      for (final toTile in state.puzzle.tiles.where(
+        (e) => !e.isWhitespace && e.chessPiece.color != state.colorToMove,
+      )) {
         if (fromTile.chessPiece.canMove(
           state,
           fromTile: fromTile,
@@ -282,16 +314,23 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
   }
 
   void _onPuzzleReset(PuzzleReset event, Emitter<PuzzleState> emit) {
-    final puzzle = _generatePuzzle(_size);
+    final puzzle = _generatePuzzle(
+      state.factory.boardSize,
+    );
     emit(
       PuzzleState(
+        factory: state.factory,
         puzzle: puzzle.sort(),
+        mode: state.mode,
       ),
     );
   }
 
   /// Build a randomized, solvable puzzle of the given size.
-  Puzzle _generatePuzzle(int size) {
+  Puzzle _generatePuzzle(
+    int size, {
+    ChessPieceFactory? factory,
+  }) {
     final correctPositions = <Position>[];
     final currentPositions = <Position>[];
     final whitespaceCoordinate = (size / 2).floor() + 1;
@@ -315,6 +354,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
     final tiles = _getTileListFromPositions(
       size,
       correctPositions,
+      factory: factory,
     );
 
     final puzzle = Puzzle(tiles: tiles);
@@ -326,10 +366,10 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
   /// current position.
   List<Tile> _getTileListFromPositions(
     int size,
-    List<Position> currentPositions,
-  ) {
+    List<Position> currentPositions, {
+    ChessPieceFactory? factory,
+  }) {
     final whitespaceCoordinate = (size / 2).floor() + 1;
-    final chessPieceFactory = ChessPieceFactory();
     return [
       for (int i = 1; i <= size * size; i++)
         if (i == size * (whitespaceCoordinate - 1) + whitespaceCoordinate)
@@ -340,7 +380,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
           )
         else
           Tile(
-            value: chessPieceFactory
+            value: (factory ?? state.factory)
                 .getPiece(index: i, maxIndex: size * size)
                 .toString(),
             currentPosition: currentPositions[i - 1],

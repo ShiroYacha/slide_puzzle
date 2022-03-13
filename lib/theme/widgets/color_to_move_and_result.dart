@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:very_good_slide_puzzle/chess/chess_piece.dart';
+import 'package:very_good_slide_puzzle/colors/colors.dart';
 import 'package:very_good_slide_puzzle/l10n/l10n.dart';
 import 'package:very_good_slide_puzzle/layout/layout.dart';
 import 'package:very_good_slide_puzzle/theme/theme.dart';
@@ -59,10 +60,22 @@ class ColorToMoveAndResult extends StatelessWidget {
                 AnimatedDefaultTextStyle(
                   key: const Key('color_to_move'),
                   style: PuzzleTextStyle.headline4.copyWith(
-                    color: textColor,
+                    color: colorToMove == ChessPieceColor.white
+                        ? Colors.white
+                        : Colors.black,
                   ),
                   duration: PuzzleThemeAnimationDuration.textStyle,
-                  child: Text(toBeginningOfSentenceCase(colorToMove.name)!),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: PuzzleColors.blue50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(6),
+                    child: Text(
+                      toBeginningOfSentenceCase(colorToMove.name)!,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
                 ),
                 AnimatedDefaultTextStyle(
                   style: bodyTextStyle.copyWith(

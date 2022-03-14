@@ -77,8 +77,7 @@ It's basically chess with a small twist:
               Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 height: 300,
-                child:
-                    Image.asset('assets/images/sliding_chess_tutorial_1.gif'),
+                child: Image.asset('assets/images/sliding_chess_tutorial.gif'),
               ),
               ...{
                 '''

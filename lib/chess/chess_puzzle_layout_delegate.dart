@@ -68,7 +68,6 @@ class ChessPuzzleLayoutDelegate extends PuzzleLayoutDelegate {
   Widget boardBuilder(int size, List<Widget> tiles) {
     return Column(
       children: [
-        const Gap(90),
         const ResponsiveGap(
           small: 32,
           medium: 48,

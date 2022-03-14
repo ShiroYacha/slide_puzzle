@@ -64,10 +64,15 @@ class _AppState extends State<App> {
 
     _platformHelper = widget._platformHelperFactory();
 
+    precacheImage(
+      Image.asset('assets/images/sliding_chess_tutorial.gif').image,
+      context,
+    );
+
     _storage.ready.then((ready) async {
       if (ready) {
         if (_storage.getItem('not_first_time') != true) {
-          await showTutorial();
+          await Future.delayed(const Duration(seconds: 1), showTutorial);
           await _storage.setItem('not_first_time', true);
         }
       }

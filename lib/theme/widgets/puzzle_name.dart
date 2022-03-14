@@ -42,6 +42,7 @@ class PuzzleName extends StatelessWidget {
           children: [
             if (state.canGotoPreviousFactory)
               WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 2, right: 8),
                   child: GestureDetector(
@@ -50,7 +51,7 @@ class PuzzleName extends StatelessWidget {
                     },
                     child: const Icon(
                       Icons.arrow_circle_left,
-                      size: 18,
+                      size: 24,
                       color: PuzzleColors.white,
                     ),
                   ).asMouseClickRegion,
@@ -58,7 +59,7 @@ class PuzzleName extends StatelessWidget {
               )
             else
               const WidgetSpan(
-                child: SizedBox(width: 26),
+                child: SizedBox(width: 30),
               ),
             TextSpan(
               text: state.factory.name,
@@ -68,6 +69,7 @@ class PuzzleName extends StatelessWidget {
             ),
             if (state.canGotoNextFactory)
               WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 2, left: 8),
                   child: GestureDetector(
@@ -76,7 +78,7 @@ class PuzzleName extends StatelessWidget {
                     },
                     child: const Icon(
                       Icons.arrow_circle_right,
-                      size: 18,
+                      size: 24,
                       color: PuzzleColors.white,
                     ),
                   ).asMouseClickRegion,
@@ -84,7 +86,7 @@ class PuzzleName extends StatelessWidget {
               )
             else
               const WidgetSpan(
-                child: SizedBox(width: 26),
+                child: SizedBox(width: 30),
               ),
           ],
         ),

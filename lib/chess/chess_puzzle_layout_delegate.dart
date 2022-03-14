@@ -197,7 +197,11 @@ class ChessStartSection extends StatelessWidget {
         PuzzleName(
           key: puzzleNameKey,
         ),
-        const ResponsiveGap(large: 16),
+        const ResponsiveGap(
+          large: 16,
+          medium: 12,
+          small: 12,
+        ),
         ChessPuzzleTitle(
           state: state,
         ),

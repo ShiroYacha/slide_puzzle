@@ -127,7 +127,7 @@ Instead of moving a piece, you can slide tile(s) as in the sliding puzzle. By ta
             ],
           ),
         ),
-        backgroundColor: Colors.black38,
+        backgroundColor: Colors.black87,
         insetPadding: const EdgeInsets.symmetric(vertical: 50),
         actions: [
           TextButton(

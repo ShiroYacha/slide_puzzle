@@ -418,7 +418,11 @@ class ChessPuzzleTile extends StatelessWidget {
                       } else {
                         color = theme.defaultColor;
                       }
-                      if (tile.currentPosition.toCoordinate(size).isOdd) {
+                      if (size.isEven
+                          ? (tile.currentPosition.y.isOdd
+                              ? tile.currentPosition.toCoordinate(size).isOdd
+                              : tile.currentPosition.toCoordinate(size).isEven)
+                          : tile.currentPosition.toCoordinate(size).isOdd) {
                         return color;
                       } else {
                         return _lighten(color, 0.2);
@@ -426,9 +430,10 @@ class ChessPuzzleTile extends StatelessWidget {
                     },
                   ),
                 ),
-                onPressed: state.puzzleResult == PuzzleResult.undecided
-                    ? () => context.read<PuzzleBloc>().add(TileTapped(tile))
-                    : null,
+                onPressed:
+                    state.puzzleResult == PuzzleResult.undecided && isMyMove
+                        ? () => context.read<PuzzleBloc>().add(TileTapped(tile))
+                        : null,
                 child: chessPiece.type == ChessPieceType.empty
                     ? Container()
                     : chessPiece.build(context),

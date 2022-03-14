@@ -77,24 +77,26 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          actionsPadding: const EdgeInsets.all(8),
-          actions: [
-            ChessPiece(id, color: color, type: ChessPieceType.queen),
-            ChessPiece(id, color: color, type: ChessPieceType.rook),
-            ChessPiece(id, color: color, type: ChessPieceType.knight),
-            ChessPiece(id, color: color, type: ChessPieceType.bishop),
-          ]
-              .map(
-                (e) => TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(e);
-                  },
-                  child: SvgPicture.asset(
-                    'assets/images/chess/Chess_${e.pieceSymbol}${e.colorCode}t45.svg',
+          insetPadding: EdgeInsets.zero,
+          content: Row(
+            children: [
+              ChessPiece(id, color: color, type: ChessPieceType.queen),
+              ChessPiece(id, color: color, type: ChessPieceType.rook),
+              ChessPiece(id, color: color, type: ChessPieceType.knight),
+              ChessPiece(id, color: color, type: ChessPieceType.bishop),
+            ]
+                .map(
+                  (e) => TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(e);
+                    },
+                    child: SvgPicture.asset(
+                      'assets/images/chess/Chess_${e.pieceSymbol}${e.colorCode}t45.svg',
+                    ),
                   ),
-                ),
-              )
-              .toList(),
+                )
+                .toList(),
+          ),
         );
       },
     );

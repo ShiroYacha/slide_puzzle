@@ -86,7 +86,7 @@ To move a piece, first press and hold it then drag it and drop it on the desired
                 '''
 Instead of moving a piece, you can also slide tile(s) as in the "sliding puzzle". By tapping a tile in the same axis as the missing "hole". ''':
                     const SizedBox.shrink(),
-                'You cannot slide tile(s) into or out of checks on your own King. But sliding can be very useful while':
+                'You cannot slide tile(s) into or out of checks on your own King. But sliding can be very useful while attacking!':
                     const SizedBox.shrink(),
                 'No piece can move pass the missing "hole" (except Knight)':
                     const SizedBox.shrink(),

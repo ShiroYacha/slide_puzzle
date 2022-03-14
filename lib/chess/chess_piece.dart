@@ -10,6 +10,9 @@ import 'package:very_good_slide_puzzle/models/models.dart';
 
 import 'package:very_good_slide_puzzle/puzzle/puzzle.dart';
 
+/// TODO: improve this for now use a global state
+final moveMapCache = <String, bool>{};
+
 /// A chess piece
 class ChessPiece {
   /// Default constructor
@@ -58,11 +61,12 @@ class ChessPiece {
   }
 
   Widget build(BuildContext context) {
-    final puzzleState = context.select((PuzzleBloc bloc) => bloc.state);
+    final size =
+        context.select((PuzzleBloc bloc) => bloc.state.puzzle.tiles.length);
     return Center(
       child: SvgPicture.asset(
         'assets/images/chess/Chess_$pieceSymbol${colorCode}t45.svg',
-        width: 60 / sqrt(puzzleState.puzzle.tiles.length).floor() * 3,
+        width: 60 / sqrt(size).floor() * 3,
       ),
     );
   }
@@ -110,26 +114,43 @@ class ChessPiece {
     bool checkPiece = true,
     bool checkTurn = true,
   }) {
+    // Check hash
+    final hash = [
+      puzzleState.tileHash,
+      fromTile.value,
+      toTile.value,
+      checkKingSafety,
+      checkPiece,
+      checkTurn
+    ].join(',');
+    if (moveMapCache.containsKey(hash)) {
+      return moveMapCache[hash]!;
+    }
+    // Compute
     final from = fromTile.currentPosition;
     final to = toTile.currentPosition;
     if (checkTurn && puzzleState.colorToMove != fromTile.chessPiece.color) {
       // Cannot capture if it's not your turn
+      moveMapCache[hash] = false;
       return false;
     }
     if ((checkPiece &&
             (toTile.chessPiece.color == fromTile.chessPiece.color)) ||
         from == to) {
       // Cannot capture same color piece or not move
+      moveMapCache[hash] = false;
       return false;
     }
     if (type == ChessPieceType.pawn) {
-      return (to.x - from.x).abs() == 1 &&
+      final result = (to.x - from.x).abs() == 1 &&
           (to.y - from.y) == (color == ChessPieceColor.white ? -1 : 1) &&
           (!checkPiece ||
               (toTile.chessPiece.type != ChessPieceType.empty &&
                   toTile.chessPiece.color != color));
+      moveMapCache[hash] = result;
+      return result;
     }
-    return canMove(
+    final result = canMove(
       puzzleState,
       fromTile: fromTile,
       toTile: toTile,
@@ -137,6 +158,8 @@ class ChessPiece {
       checkPiece: checkPiece,
       checkTurn: checkTurn,
     );
+    moveMapCache[hash] = result;
+    return result;
   }
 
   ChessPieceColor get oppositeColor => color == ChessPieceColor.white
@@ -181,15 +204,30 @@ class ChessPiece {
     bool checkPiece = true,
     bool checkTurn = true,
   }) {
+    // Check hash
+    final hash = [
+      puzzleState.tileHash,
+      fromTile.value,
+      toTile.value,
+      checkKingSafety,
+      checkPiece,
+      checkTurn
+    ].join(',');
+    if (moveMapCache.containsKey(hash)) {
+      return moveMapCache[hash]!;
+    }
+    // Compute
     final from = fromTile.currentPosition;
     final to = toTile.currentPosition;
     if (checkTurn && puzzleState.colorToMove != fromTile.chessPiece.color) {
       // Cannot move if it's not your turn
+      moveMapCache[hash] = false;
       return false;
     }
     if (checkPiece &&
         (toTile.chessPiece.color == fromTile.chessPiece.color || from == to)) {
       // Cannot move/capture same color piece or not move
+      moveMapCache[hash] = false;
       return false;
     }
     if (!checkPiece ||
@@ -252,10 +290,13 @@ class ChessPiece {
             toTile: toTile,
           )) {
         // Cannot move and make your own king checked
+        moveMapCache[hash] = false;
         return false;
       }
+      moveMapCache[hash] = result;
       return result;
     }
+    moveMapCache[hash] = false;
     return false;
   }
 }
@@ -295,6 +336,7 @@ const chessPieceFactories = [
   ChessPieceLevel5Factory(),
   ChessPieceLevel6Factory(),
   ChessPieceLevel7Factory(),
+  ChessPieceLevel8Factory(),
   // ChessPieceNormalBoardFactory(),
 ];
 
@@ -617,6 +659,59 @@ class ChessPieceLevel7Factory extends ChessPieceFactory {
   int get boardSize => 5;
 }
 
+class ChessPieceLevel8Factory extends ChessPieceFactory {
+  const ChessPieceLevel8Factory();
+
+  @override
+  ChessPiece getPiece({
+    required int index,
+    required int maxIndex,
+  }) {
+    final color =
+        index > maxIndex / 2 ? ChessPieceColor.white : ChessPieceColor.black;
+    final size = sqrt(maxIndex).floor();
+    if (index == 3 || index == maxIndex - 2) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.king,
+      );
+    } else if ([1, 5, maxIndex, maxIndex - 4].contains(index)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.rook,
+      );
+    } else if ([8, 18].contains(index)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.bishop,
+      );
+    } else if (index <= 4 || index > maxIndex - 4) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.knight,
+      );
+    } else if ((index > size && index <= size * 2) ||
+        (index > maxIndex - size * 2 && index <= maxIndex - size)) {
+      return ChessPiece(
+        index,
+        color: color,
+        type: ChessPieceType.pawn,
+      );
+    }
+    return ChessPiece.empty(index);
+  }
+
+  @override
+  String get name => 'Board 8';
+
+  @override
+  int get boardSize => 5;
+}
+
 class ChessPieceNormalBoardFactory extends ChessPieceFactory {
   const ChessPieceNormalBoardFactory();
 
@@ -671,7 +766,7 @@ class ChessPieceNormalBoardFactory extends ChessPieceFactory {
   }
 
   @override
-  String get name => 'Board 6';
+  String get name => '"Normal" board';
 
   @override
   int get boardSize => 8;

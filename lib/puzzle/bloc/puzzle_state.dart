@@ -94,6 +94,7 @@ class PuzzleState extends Equatable {
       chessPieceFactories[chessPieceFactories.indexOf(factory) - 1];
   ChessPieceFactory get nextFactory =>
       chessPieceFactories[chessPieceFactories.indexOf(factory) + 1];
+  String get tileHash => puzzle.tiles.map((e) => e.value).join(',');
 
   @override
   List<Object?> get props => [

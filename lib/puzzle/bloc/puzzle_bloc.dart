@@ -187,6 +187,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
       ),
       draggingTile: const NullableCopy(null),
     );
+    moveMapCache.clear();
     emit(
       newState.copyWith(
         puzzle: newState.puzzle.sort(),
@@ -218,6 +219,7 @@ class PuzzleBloc extends Bloc<PuzzleEvent, PuzzleState> {
           showMessage('Cannot slide into a check!');
           return;
         }
+        moveMapCache.clear();
         emit(
           newState.copyWith(
             tileMovementStatus: TileMovementStatus.moved,

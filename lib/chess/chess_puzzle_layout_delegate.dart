@@ -144,7 +144,10 @@ Widget _buildButtons(
   BuildContext context, {
   bool smallMode = true,
 }) {
-  final puzzleState = context.select((PuzzleBloc bloc) => bloc.state);
+  final puzzleResult =
+      context.select((PuzzleBloc bloc) => bloc.state.puzzleResult);
+  final canGotoNextFactory =
+      context.select((PuzzleBloc bloc) => bloc.state.canGotoNextFactory);
 
   return Column(
     crossAxisAlignment:
@@ -155,8 +158,7 @@ Widget _buildButtons(
             smallMode ? MainAxisAlignment.center : MainAxisAlignment.start,
         children: [
           const ChessPuzzleResetButton(),
-          if (puzzleState.puzzleResult == PuzzleResult.whiteWin &&
-              puzzleState.canGotoNextFactory) ...[
+          if (puzzleResult == PuzzleResult.whiteWin && canGotoNextFactory) ...[
             SizedBox(width: smallMode ? 8 : 16),
             const ChessPuzzleNextLevelButton(),
           ]
